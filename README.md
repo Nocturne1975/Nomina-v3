@@ -55,5 +55,5 @@ Les EPICs actuels incluent :
 - **EPIC K** : Éditeurs & expérience d'écriture
 - **EPIC L** : Auth, permissions & modération
 - **EPIC M** : Tests, qualité & surveillance
-- **EPIC N** : Génération et randomisation narratif
+- **EPIC N** : Génération et randomisation narrative
 - **EPIC O** : Internationalisation & localisation
