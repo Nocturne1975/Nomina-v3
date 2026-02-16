@@ -11,6 +11,7 @@
     "app:dev": "npm -w Nomina-desktop run app:dev",
     "build:backend": "npm -w Nomina-backend run build",
     "build:desktop": "npm -w Nomina-desktop run build",
-    "seed": "npm -w Nomina-backend run seed"
+    "seed": "npm -w Nomina-backend run seed", 
+    "postinstall": "prisma generate"
   }
 }
