@@ -19,7 +19,8 @@
     "import:titres": "node -r ts-node/register src/scripts/import-titres.ts",
     "import:fragments-histoire": "node -r ts-node/register src/scripts/import-fragments-histoire.ts",
     "import:fragments-histoire:apply": "node -r ts-node/register src/scripts/import-fragments-histoire.ts --apply",
-    "prisma": "prisma"    
+    "prisma": "prisma", 
+    "postinstall": "prisma generate"    
   },
   "dependencies": {
     "@clerk/backend": "^1.27.1",

@@ -1,124 +1,107 @@
-Présenté par : Sonia Corbin Date : 05/11/2025
+# NOMINA — Générateur d'idées (noms, personnages, mondes, concepts)
 
-# NOMINA — API Génératrice & Narratrice de Noms
+Nomina est une API qui aide à **inventer** :
+- des **noms** (personnages, lieux, familles, titres),
+- des **concepts** (idées de jeux, thèmes, mots-clés),
+- des **fragments d'histoire** (mini‑backstories, hooks narratifs),
+- des **PNJ** (combinaison nom + éléments narratifs).
 
-Nomina s’inscrit dans l’industrie du logiciel et de la création numérique, en proposant une API innovante dédiée à la narration et à la génération de noms.
+L'idée : accélérer l'inspiration pour des univers fantasy/sci‑fi, des scénarios, des personnages, ou des mécaniques de jeu.
 
-Slogan court (suggestion pour logo) : **Créez, Nommez, Racontez**
+Dossier de présentation : `docs/Dossier_Presentation_Nomina.md`
 
-Dossier de présentation (version “document”) : `docs/Dossier_Presentation_Nomina.md`
+---
 
-* * *
-## Installation & Lancement
+## Démarrage local
 
-1. Clonez le dépôt et installez les dépendances : git clone https://github.com/Nocturne1975/Nomina-backend
-   cd Nomina-backend
-   npm install
+### Prérequis
 
-2. Configurez le fichier `.env` à la racine :
-   DATABASE_URL=postgresql://...
-  CLERK_SECRET_KEY=sk_live_...
-  ADMIN_CLERK_USER_ID=user_...
-  CORS_ORIGIN=http://localhost:5173
+- Node.js 20+
+- Une base PostgreSQL accessible via `DATABASE_URL` (local ou cloud)
 
-3. Lancez le serveur :  npm run dev
-  
-4. Testez l’API avec le fichier `test.rest` (VS Code) ou Postman.
+### Installation
 
-## src + Desktop + Offline
+```bash
+npm install
+```
 
-- Le backend peut être déployé (API en ligne) et consommé par un **site src** et une **app Electron**.
-- CORS est configurable via `CORS_ORIGIN` (liste séparée par virgules). L'app Electron peut ne pas envoyer d'en-tête `Origin`.
-- Le mode offline se fait côté client (cache GET + outbox) et ne nécessite pas de changement côté API.
+### Variables d'environnement (Nomina-backend/.env)
 
-## Endpoints principaux
+- `DATABASE_URL` : chaîne de connexion PostgreSQL (utilisée par Prisma)
+- `CORS_ORIGIN` (ou `CORS_ORIGINS`) : origins autorisées (séparées par virgules)
+- `PORT` : port de l'API (défaut : 3000)
 
-| Méthode | Endpoint                  | Description                  |
-|---------|---------------------------|------------------------------|
-| GET     | /users                    | Liste tous les utilisateurs  |
-| POST    | /users                    | Crée un utilisateur          |
-| ...     | ...                       | ...                          |
+Authentification (optionnel selon ton usage) :
+- `CLERK_SECRET_KEY` : requis pour les endpoints `/auth/*`
+- `ADMIN_CLERK_USER_ID` : requis pour `/auth/admin/ping`
 
-## Schéma ER
+### Lancer le serveur
 
-Le schéma ER est disponible à la racine du dépôt sous forme d’image/PDF.
+```bash
+npm run dev
+```
 
+### Migrations / seed
 
-## Table des matières
+```bash
+npm run migrate
+npm run seed
+```
 
-- [NOMINA — API Génératrice \& Narratrice de Noms]
-  - [Installation \& Lancement]
-  - [Endpoints principaux]
-  - [Schéma ER]
-  - [Table des matières]
-  - [Présentation]
-  - [Utilisateurs cibles]
-  - [Objectifs]
-  - [Fonctionnalités principales]
-  - [Spécification API (exemples)]
-    - [GET /healthz]
-    - [GET /generate/npcs]
-    - [GET /generate/nom-personnages]
-    - [GET /generate/lieux]
-    - [GET /generate/fragments-histoire]
-    - [GET /generate/titres]
-  - [Exemples d'utilisation]
-    - [curl]
-    - [Client JavaScript (exemple minimal)]
-  - [Architecture technique (version locale / gratuite)]
-  - [Design \& Branding]
-    - [Palette \& typographie]
-    - [Iconographie recommandée (pour logo)]
-    - [Slogans courts possibles (pour le logo)]
-  - [Déploiement (options simples)]
-  - [Contribution \& contact]
-  - [Licence]
-  - [Annexes (à inclure dans le dossier)]
+---
 
-* * *
+## Endpoints
 
-## Présentation
+### Santé
 
-Nomina est une API destinée à générer des noms (personnages, lieux, objets, créatures) accompagnés, si souhaité, d'une mini-description ou d'une mini-biographie narrative. L’idée est d’aider développeurs, auteurs et créateurs à trouver rapidement des noms évocateurs et porteurs d’histoire.
+- `GET /healthz` : état du serveur
 
-* * *
+### Génération (public)
 
-## Utilisateurs cibles
+Ces routes sont accessibles sans token (elles tirent et combinent des données de la base) :
 
-Nomina vise principalement les utilisateurs suivants :
+- `GET /generate/npcs`
+- `GET /generate/nom-personnages`
+- `GET /generate/lieux`
+- `GET /generate/fragments-histoire`
+- `GET /generate/titres`
+- `GET /generate/concepts`
 
-1.  Développeurs
-    -   Intègrent la génération de noms et de mini-histoires dans leurs applications (jeux, sites src, outils, chatbots...).
-    -   Développeurs de jeux vidéo, jeux de rôle, applis d’écriture, etc.
-2.  Auteurs et écrivains
-    -   Romans, nouvelles, BD, scénarios, en quête d’inspiration pour personnages, lieux ou objets.
-3.  Maîtres de jeu (MJ) et joueurs de jeux de rôle
-    -   Création rapide de PNJ, villes, objets magiques, etc., avec une touche narrative.
-4.  Créateurs de contenu
-    -   YouTubers, podcasteurs, blogueurs, streamers cherchant noms et idées pour leurs univers.
-5.  Entrepreneurs et marketeurs
-    -   Brainstorming de noms de marque, produits ou projets, avec un angle narratif différenciant.
-6.  Chercheurs et enseignants
-    -   Ateliers d’écriture, projets pédagogiques sur créativité, linguistique ou histoire.
+Paramètres (query) typiques : `count`, `cultureId`, `categorieId`, `genre`, `seed`.
 
-* * *
+### Données (CRUD)
 
-## Objectifs
+- `GET /cultures`, `POST /cultures`, `PUT /cultures/:id`, `DELETE /cultures/:id` (+ `GET /cultures/total`)
+- Routes similaires existent pour `categories`, `concepts`, `titres`, `lieux`, `fragmentsHistoire`, `univers`, etc.
 
--   Fournir une API simple et rapide pour générer des noms thématiques et personnalisables.
--   Offrir des suggestions narratives (mini-histoires) associées aux noms.
--   Être facilement intégrable (RESTful, JSON) et utilisable en local ou hébergé sur des plateformes simples.
--   Rester extensible (ajout futur de modèles, langues, export, interface src, etc.).
+### Auth (protégé)
 
-* * *
+- `GET /auth/me` : nécessite un token Clerk (Bearer)
+- `GET /auth/admin/ping` : nécessite un token Clerk + rôle admin (via `ADMIN_CLERK_USER_ID`)
 
-## Fonctionnalités principales
+---
 
--   Génération de contenu : noms de personnages, lieux, titres et fragments narratifs.
--   Génération de PNJ : combinaison de noms + fragments d’histoire pour produire une mini‑backstory.
--   Paramètres via querystring : filtres (culture, catégorie, genre), quantité, et `seed` pour un résultat reproductible.
--   Endpoints REST simples, réponses JSON.
--   Persistance via base de données PostgreSQL (accès via Prisma).
+## Exemples
+
+### curl
+
+```bash
+curl "http://localhost:3000/generate/npcs?count=5&seed=demo"
+```
+
+### JavaScript (minimal)
+
+```js
+const res = await fetch("http://localhost:3000/generate/concepts?count=10&seed=demo");
+console.log(await res.json());
+```
+
+---
+
+## Notes techniques
+
+- Base : PostgreSQL + Prisma (schéma dans `prisma/schema.prisma`)
+- Déploiement : Docker + Fly.io (migrations via `npm run migrate:deploy`)
 
 * * *
 
