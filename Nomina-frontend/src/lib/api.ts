@@ -5,9 +5,6 @@ export type ApiErrorPayload = {
 };
 
 export const getApiBaseUrl = (): string => {
-  const runtime = (globalThis as any)?.NOMINA?.apiBaseUrl as string | undefined;
-  if (runtime && runtime.trim().length > 0) return runtime.trim().replace(/\/$/, '');
-
   const raw = import.meta.env.VITE_API_BASE_URL as string | undefined;
   return (raw && raw.trim().length > 0 ? raw.trim() : 'http://localhost:3000').replace(/\/$/, '');
 };

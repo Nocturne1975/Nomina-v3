@@ -1,10 +1,10 @@
 # Nomina — Projet de session (Lab 3)
 
-Ce dépôt est un **monorepo** contenant le backend et le desktop.
+Ce dépôt contient un **backend** (API) et un **frontend web** (interface React).
 
 Application **full‑stack** :
 - **Backend** : API REST Node.js/Express + Prisma
-- **Frontend** : React (Vite) — version desktop (Electron)
+- **Frontend** : React (Vite)
 - **Auth** : Clerk (inscription / connexion / déconnexion)
 
 ## Fonctionnalités (Lab 3)
@@ -18,55 +18,31 @@ Application **full‑stack** :
 
 - Node.js : >= 20
 - Backend : Express 5, Prisma 7
-- Frontend : React 18, Vite 6, React Router (HashRouter)
+- Frontend : React 18, Vite 6, React Router (BrowserRouter)
 - Auth : Clerk
 - Styles/UI : Tailwind + composants UI déjà présents dans le projet
 
 ## Démarrage local
 
-### Installation (monorepo)
-
-À la racine :
-
-```bash
-npm install
-```
-
 ### 1) Backend
 
-Dans un terminal :
-
 ```bash
-npm run dev:backend
+cd Nomina-backend
+npm install
+npm run dev
 ```
 
-Créer `Nomina-backend/.env` à partir de l’exemple :
+Backend : `http://localhost:3000`
 
-- Voir : [Nomina-backend/.env.example](Nomina-backend/.env.example)
-
-Puis lancer :
+### 2) Frontend (web)
 
 ```bash
-npm run dev:backend
+cd Nomina-frontend
+npm install
+npm run dev
 ```
 
-Backend par défaut : `http://localhost:3000`
-
-### 2) Frontend (desktop)
-
-Dans un 2e terminal :
-
-```bash
-npm run dev:desktop
-```
-
-Frontend Vite : `http://localhost:5173`
-
-Option Electron (UI + Electron) :
-
-```bash
-npm run app:dev
-```
+Frontend : `http://localhost:5173`
 
 ## Variables d’environnement (sans secrets)
 
@@ -78,7 +54,7 @@ npm run app:dev
 - `CORS_ORIGIN` : origin(s) autorisées, ex. `http://localhost:5173`
 - `PORT` : port du backend
 
-### Frontend (Nomina-desktop/.env.local)
+### Frontend (Nomina-frontend/.env.local)
 
 - `VITE_CLERK_PUBLISHABLE_KEY` : clé publique Clerk
 - `VITE_API_BASE_URL` : URL du backend (ex. `http://localhost:3000`)

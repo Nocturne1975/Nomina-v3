@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './styles/globals.css'
 import { ClerkProvider } from '@clerk/clerk-react'
-import { HashRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 
 // Import your Publishable Key
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
@@ -31,9 +31,9 @@ function MissingEnv() {
 const root = ReactDOM.createRoot(rootEl)
 
 const app = (
-  <HashRouter>
+  <BrowserRouter>
     <App />
-  </HashRouter>
+  </BrowserRouter>
 )
 
 if (!PUBLISHABLE_KEY) {

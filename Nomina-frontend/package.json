@@ -1,9 +1,8 @@
 {
-  "name": "nomina-desktop",
+  "name": "nomina-frontend",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "electron/main.cjs",
   "engines": {
     "node": ">=20"
   },
@@ -11,11 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:src": "vite build --mode src",
-    "build:electron": "vite build --mode electron",
     "preview": "vite preview",
-    "electron": "electron .",
-    "electron:dev": "powershell -NoProfile -Command \"$env:VITE_DEV_SERVER_URL='http://localhost:5173'; electron .\"",
-    "app:dev": "concurrently -k -n VITE,ELECTRON -c blue,magenta \"npm:dev\" \"npm:electron:dev\"",
     "migrate": "node -e \"console.error('Les migrations Prisma se font dans Nomina-backend. Utilise: npm run backend:migrate'); process.exit(1)\"",
     "seed": "node -e \"console.error('Le seed se fait dans Nomina-backend. Utilise: npm run backend:seed'); process.exit(1)\"",
     "backend:migrate": "npm --prefix ../Nomina-backend run migrate",
@@ -24,15 +19,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Nocturne1975/Nomina-desktop.git"
+    "url": "git+https://github.com/Nocturne1975/Nomina-v3.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Nocturne1975/Nomina-desktop/issues"
+    "url": "https://github.com/Nocturne1975/Nomina-v3/issues"
   },
-  "homepage": "https://github.com/Nocturne1975/Nomina-desktop#readme",
+  "homepage": "https://github.com/Nocturne1975/Nomina-v3#readme",
   "description": "",
   "dependencies": {
     "@clerk/clerk-react": "^5.59.5",
@@ -65,7 +60,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "*",
     "cmdk": "^1.1.1",
-    "electron": "^39.2.6",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.487.0",
@@ -87,7 +81,6 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react-swc": "^3.10.2",
     "autoprefixer": "^10.4.21",
-    "concurrently": "^9.1.2",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.3",

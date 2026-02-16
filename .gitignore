@@ -3,9 +3,9 @@
 
 # Build outputs
 Nomina-backend/dist/
-Nomina-desktop/dist/
-Nomina-desktop/out/
-Nomina-desktop/release/
+Nomina-frontend/dist/
+Nomina-frontend/out/
+Nomina-frontend/release/
 
 # Prisma generated (kept in source tree by this repo)
 # If you want to commit it, remove these lines.
@@ -27,4 +27,4 @@ Thumbs.db
 
 # Backups from monorepo merge
 Nomina-backend/.git.bak/
-Nomina-desktop/.git.bak/
+Nomina-frontend/.git.bak/
