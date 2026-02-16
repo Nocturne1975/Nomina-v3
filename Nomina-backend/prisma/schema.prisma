@@ -1,0 +1,141 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql" 
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  email     String   @unique
+  role      String   @default("Editor") // Ex: Admin, Editor, Viewer
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UniversThematique {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  categories  Categorie[]
+}
+
+model Categorie {
+  id          Int               @id @default(autoincrement())
+  name        String
+  description String?
+  universId   Int
+  univers     UniversThematique @relation(fields: [universId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  nomPersonnages    NomPersonnage[] // opposite relation field
+  lieux             Lieux[]
+  fragmentsHistoire FragmentsHistoire[] // opposite relation field
+  titres            Titre[] // opposite relation field
+  concepts          Concept[] // opposite relation field
+  nomFamilles       NomFamille[] // opposite relation field
+}
+
+model Culture {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  nomPersonnages    NomPersonnage[] // opposite relation field
+  fragmentsHistoire FragmentsHistoire[] // opposite relation field
+  titres            Titre[] // opposite relation field
+  nomFamilles       NomFamille[] // opposite relation field
+}
+
+model NomFamille {
+  id          Int        @id @default(autoincrement())
+  valeur      String?    @unique
+  cultureId   Int?
+  culture     Culture?   @relation(fields: [cultureId], references: [id])
+  categorieId Int?
+  categorie   Categorie? @relation(fields: [categorieId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime?  @updatedAt
+
+  personnages NomPersonnage[] // relation inverse
+}
+
+model NomPersonnage {
+  id           Int         @id @default(autoincrement())
+  valeur       String?
+  genre        String?
+  cultureId    Int?
+  culture      Culture?    @relation(fields: [cultureId], references: [id])
+  categorieId  Int?
+  categorie    Categorie?  @relation(fields: [categorieId], references: [id])
+  nomFamilleId Int?
+  nomFamille   NomFamille? @relation(fields: [nomFamilleId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime?   @updatedAt
+}
+
+model Lieux {
+  id          Int        @id @default(autoincrement())
+  value       String
+  type        String?
+  categorieId Int?
+  categorie   Categorie? @relation(fields: [categorieId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime?  @updatedAt
+}
+
+model FragmentsHistoire {
+  id            Int        @id @default(autoincrement())
+  texte         String
+  appliesTo     String?
+  genre         String?
+  minNameLength Int?
+  maxNameLength Int?
+  cultureId     Int?
+  culture       Culture?   @relation(fields: [cultureId], references: [id])
+  categorieId   Int?
+  categorie     Categorie? @relation(fields: [categorieId], references: [id])
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Titre {
+  id          Int        @id @default(autoincrement())
+  valeur      String
+  type        String?
+  genre       String?
+  cultureId   Int?
+  culture     Culture?   @relation(fields: [cultureId], references: [id])
+  categorieId Int?
+  categorie   Categorie? @relation(fields: [categorieId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Concept {
+  id          Int        @id @default(autoincrement())
+  valeur      String
+  type        String?
+  mood        String?
+  keywords    String?
+  categorieId Int?
+  categorie   Categorie? @relation(fields: [categorieId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}

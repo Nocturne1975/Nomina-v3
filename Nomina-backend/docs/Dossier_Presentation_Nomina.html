@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NOMINA — Dossier de présentation</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #0f172a;
+      --muted: #475569;
+      --rule: #e2e8f0;
+      --accent: #0ea5a4;
+    }
+
+    @page { margin: 22mm; }
+
+    html, body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      line-height: 1.45;
+      font-size: 11.5pt;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 18px;
+    }
+
+    h1 {
+      font-size: 22pt;
+      margin: 0 0 6px;
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 12.5pt;
+    }
+
+    .meta {
+      margin: 0 0 18px;
+      color: var(--muted);
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--rule);
+      margin: 18px 0 18px;
+    }
+
+    h2 {
+      font-size: 14.5pt;
+      margin: 18px 0 8px;
+      padding-top: 6px;
+      border-top: 1px solid var(--rule);
+    }
+
+    h3 {
+      font-size: 12.5pt;
+      margin: 12px 0 6px;
+      color: var(--fg);
+    }
+
+    ul {
+      margin: 6px 0 12px 18px;
+    }
+
+    li { margin: 4px 0; }
+
+    .tagline {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-left: 4px solid var(--accent);
+      background: #f0fdfa;
+    }
+
+    @media print {
+      main { padding: 0; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>NOMINA — Dossier de présentation</h1>
+      <p class="subtitle">API de génération narrative (noms & micro‑récits)</p>
+      <p class="meta">Présenté par : Sonia Corbin<br />Date : 31/01/2026</p>
+      <div class="tagline"><strong>Slogan :</strong> Créez, Nommez, Racontez.</div>
+    </header>
+
+    <hr />
+
+    <section>
+      <h2>1. Présentation générale</h2>
+      <p>Nomina est un service de génération de contenu destiné à accélérer la création d’univers et de récits. Le projet propose une API qui produit des noms (personnages, lieux, titres) et, selon le type demandé, des fragments narratifs permettant de composer des mini‑histoires.</p>
+      <p>Nomina vise un usage concret : fournir rapidement des éléments cohérents pour des jeux, romans, scénarios, ou supports pédagogiques, tout en conservant une logique de filtrage (culture, catégorie, genre) et de reproductibilité (graine/seed).</p>
+    </section>
+
+    <section>
+      <h2>2. Public cible</h2>
+      <ul>
+        <li>Développeurs (jeux, outils d’écriture, applications, chatbots)</li>
+        <li>Auteurs et scénaristes (romans, BD, nouvelles)</li>
+        <li>Maîtres de jeu et joueurs de jeux de rôle (PNJ, lieux, accroches narratives)</li>
+        <li>Créateurs de contenu (stream, podcast, YouTube)</li>
+        <li>Équipes créatives (brainstorming de concepts, titres, idées d’univers)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>3. Objectifs du projet</h2>
+      <ul>
+        <li>Offrir une API simple et rapide pour générer du contenu inspirant.</li>
+        <li>Permettre des filtres thématiques et culturels afin de produire des résultats plus cohérents.</li>
+        <li>Produire des sorties structurées faciles à intégrer dans d’autres projets.</li>
+        <li>Rendre la génération reproductible grâce à une seed.</li>
+        <li>Proposer une expérience utilisateur via une application desktop dédiée.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>4. Fonctionnalités principales</h2>
+      <h3>4.1 Génération via API</h3>
+      <ul>
+        <li>Génération de noms de personnages depuis une base de données.</li>
+        <li>Génération de lieux depuis une base de données.</li>
+        <li>Génération de titres depuis une base de données.</li>
+        <li>Génération de fragments d’histoire (extraits narratifs) depuis une base de données.</li>
+        <li>Génération de PNJ (idées complètes) en combinant un nom avec plusieurs fragments d’histoire.</li>
+      </ul>
+
+      <h3>4.2 Paramétrage et cohérence</h3>
+      <ul>
+        <li>Filtres : culture, catégorie, genre.</li>
+        <li>Quantité : génération en lot.</li>
+        <li>Reproductibilité : une seed permet de rejouer la même sélection.</li>
+      </ul>
+
+      <h3>4.3 Application desktop (complément)</h3>
+      <ul>
+        <li>Interface graphique pour déclencher des générations et exploiter les résultats.</li>
+        <li>Possibilité de fonctionnement offline via une API locale minimale (selon les modules).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>5. Aperçu des endpoints</h2>
+      <p>L’API expose notamment :</p>
+      <ul>
+        <li>Santé du service : GET /healthz</li>
+        <li>Génération de PNJ : GET /generate/npcs</li>
+        <li>Génération de personnages (format court) : GET /generate/nom-personnages</li>
+        <li>Génération de lieux : GET /generate/lieux</li>
+        <li>Génération de fragments d’histoire : GET /generate/fragments-histoire</li>
+        <li>Génération de titres : GET /generate/titres</li>
+      </ul>
+      <p>Les paramètres varient selon la route, mais incluent typiquement : count, cultureId, categorieId, genre, appliesTo, seed.</p>
+    </section>
+
+    <section>
+      <h2>6. Architecture technique</h2>
+      <h3>6.1 Backend</h3>
+      <ul>
+        <li>Langage : TypeScript</li>
+        <li>Serveur : Node.js + Express</li>
+        <li>Accès aux données : Prisma</li>
+        <li>Base de données : PostgreSQL</li>
+        <li>Authentification : Clerk (token Bearer) et contrôle d’accès administrateur via configuration</li>
+        <li>Compatibilité : CORS configurable et support des contextes sans en‑tête Origin (ex. application desktop)</li>
+      </ul>
+
+      <h3>6.2 Desktop</h3>
+      <ul>
+        <li>UI : React + TypeScript</li>
+        <li>Packaging : Electron</li>
+        <li>Build : Vite</li>
+        <li>Fonctionnement offline : démarrage optionnel d’un serveur local (API offline) au lancement</li>
+      </ul>
+
+      <h3>6.3 Schéma simplifié</h3>
+      <p>Utilisateur → UI (web/desktop) → API Nomina (Express) → PostgreSQL (Prisma) → Résultat</p>
+    </section>
+
+    <section>
+      <h2>7. Sécurité et fiabilité</h2>
+      <ul>
+        <li>Authentification via jeton (Clerk).</li>
+        <li>Contrôle d’accès administrateur pour les opérations sensibles.</li>
+        <li>Endpoint de health check pour la supervision.</li>
+        <li>Configuration CORS pour limiter les origines autorisées.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>8. Déploiement</h2>
+      <ul>
+        <li>Déploiement conteneurisé (Docker).</li>
+        <li>Hébergement : Fly.io.</li>
+        <li>Migrations de base de données exécutées au déploiement.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>9. Design & branding (pistes)</h2>
+      <h3>Palette</h3>
+      <ul>
+        <li>Fond : bleu nuit / gris foncé</li>
+        <li>Couleur principale : bleu‑turquoise / vert d’eau</li>
+        <li>Accent : blanc cassé ou doré léger</li>
+      </ul>
+
+      <h3>Typographies</h3>
+      <ul>
+        <li>Montserrat, Poppins, Lora</li>
+      </ul>
+
+      <h3>Iconographie</h3>
+      <ul>
+        <li>Plume stylisée (écriture)</li>
+        <li>Encrier + élément mécanique discret (tech/API)</li>
+        <li>Étoile/pixel (inspiration)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>10. Évolutions possibles</h2>
+      <ul>
+        <li>Internationalisation : nouvelles langues et variantes culturelles.</li>
+        <li>Enrichissement des datasets (noms, cultures, fragments).</li>
+        <li>Paramètres avancés (contraintes de longueur, style, tonalité).</li>
+        <li>Export (PDF/CSV) côté application desktop.</li>
+        <li>Observabilité (logs structurés, métriques) et limitation de débit si exposition publique.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>11. Contribution & contact</h2>
+      <ul>
+        <li>Contributions via issues et pull requests.</li>
+        <li>Contact : à définir (email).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>12. Licence</h2>
+      <p>Licence à définir (MIT recommandée pour un projet ouvert).</p>
+    </section>
+  </main>
+</body>
+</html>

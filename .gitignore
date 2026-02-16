@@ -1,0 +1,30 @@
+# Node
+**/node_modules/
+
+# Build outputs
+Nomina-backend/dist/
+Nomina-desktop/dist/
+Nomina-desktop/out/
+Nomina-desktop/release/
+
+# Prisma generated (kept in source tree by this repo)
+# If you want to commit it, remove these lines.
+# Nomina-backend/src/generated/
+
+# Env files
+**/.env
+**/.env.*
+
+# Logs
+**/*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local tooling
+.vscode/
+
+# Backups from monorepo merge
+Nomina-backend/.git.bak/
+Nomina-desktop/.git.bak/

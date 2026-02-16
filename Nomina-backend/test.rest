@@ -1,0 +1,128 @@
+GET http://localhost:3000/users
+###
+
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "username": "Nocture15",
+  "email": "test@example32.com",
+  "password": "motdepasse", 
+  "role": "user"
+}
+###
+GET http://localhost:3000/categories/total
+###
+
+GET http://localhost:3000/users/1
+###
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "Nocture75",
+  "password": "motdepasse"
+}
+###
+GET http://localhost:3000/users
+###
+GET http://localhost:3000/users/12
+###
+PUT http://localhost:3000/users/1
+Content-Type: application/json
+
+{
+  "email": "newemail@example.com"
+}
+###
+DELETE http://localhost:3000/users/11
+###### Create user
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "username": "Nocture15",
+  "email": "test+nocture15@example.com",
+  "password": "motdepasse",
+  "role": "user"
+}
+### 1. Créer une catégorie (note l'id retourné, ex: 2)
+POST http://localhost:3000/categories
+Content-Type: application/json
+Authorization: Bearer "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NjU5NzQ3NTYsImV4cCI6MTc2NTk3ODM1Nn0.Zyx_8yqOwEYSNd5yD5hyQegZdFwCmJS7c3mLH6ZpA0E"
+
+{
+  "name": "Catégorie Test",
+  "description": "Catégorie pour tests"
+}
+###
+
+### 2. Créer un concept lié à la catégorie créée (remplace 2 par l'id réel)
+POST http://localhost:3000/concepts
+Content-Type: application/json
+Authorization: Bearer "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NjU5NzQ3NTYsImV4cCI6MTc2NTk3ODM1Nn0.Zyx_8yqOwEYSNd5yD5hyQegZdFwCmJS7c3mLH6ZpA0E"
+
+{
+  "valeur": "Liberté",
+  "type": "Idée",
+  "mood": "Sombre",
+  "keywords": "freedom,independence",
+  "categorieId": 2
+}
+###
+
+### 3. Récupérer tous les concepts
+GET http://localhost:3000/concepts
+###
+
+### 4. Récupérer un concept par id (remplace 1 par l'id réel du concept créé)
+GET http://localhost:3000/concepts/4
+###
+
+### 5. Mettre à jour un concept (remplace 1 par l'id réel)
+PUT http://localhost:3000/concepts/4
+Content-Type: application/json
+Authorization: Bearer "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NjU5NzQ3NTYsImV4cCI6MTc2NTk3ODM1Nn0.Zyx_8yqOwEYSNd5yD5hyQegZdFwCmJS7c3mLH6ZpA0E"
+
+{
+  "mood": "Épique"
+}
+###
+
+### 6. Supprimer un concept (remplace 1 par l'id réel)
+DELETE http://localhost:3000/concepts/1
+Authorization: Bearer "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NjU5NzQ3NTYsImV4cCI6MTc2NTk3ODM1Nn0.Zyx_8yqOwEYSNd5yD5hyQegZdFwCmJS7c3mLH6ZpA0E"
+###
+
+### 7. Supprimer la catégorie créée (remplace 2 par l'id réel)
+DELETE http://localhost:3000/categories/2
+Authorization: Bearer "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NjU5NzQ3NTYsImV4cCI6MTc2NTk3ODM1Nn0.Zyx_8yqOwEYSNd5yD5hyQegZdFwCmJS7c3mLH6ZpA0E"
+###
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "username": "nouvelutilisateur4",
+  "email": "nouvelutilisateur4@example.com",
+  "password": "motdepasse",
+  "role": "user"
+}
+###
+
+###
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "nouvelutilisateur@example.com",
+  "password": "motdepasse"
+}
+###
+POST http://localhost:3000/categories
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+{
+  "name": "Test",
+  "description": "Catégorie test"
+}

@@ -1,0 +1,9 @@
+# flyctl launch added from .gitignore
+**\﻿node_modules
+**\dist
+**\.env
+**\.DS_Store
+
+# Prisma generated client (committed? usually no)
+**\src\generated\prisma
+fly.toml

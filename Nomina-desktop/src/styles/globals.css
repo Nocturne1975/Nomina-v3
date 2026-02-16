@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --violet-deep: #2d1b4e;
+    --violet-vibrant: #7b3ff2;
+    --violet-light: #a67be8;
+    --lavender: #d4c5f9;
+    --white-pure: #ffffff;
+    --white-off: #f8f6fc;
+    --rose-gold: #e8b4f0;
+    --silver: #c5bfd9;
+    --success: #a67be8;
+    --error: #f29999;
+    --attention: #f0b4e8;
+  }
+
+  body {
+    @apply bg-[#f8f6fc] text-[#2d1b4e];
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+  }
+
+  h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
