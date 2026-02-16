@@ -20,8 +20,7 @@
     "seed": "node -e \"console.error('Le seed se fait dans Nomina-backend. Utilise: npm run backend:seed'); process.exit(1)\"",
     "backend:migrate": "npm --prefix ../Nomina-backend run migrate",
     "backend:migrate:deploy": "npm --prefix ../Nomina-backend run migrate:deploy",
-    "backend:seed": "npm --prefix ../Nomina-backend run seed", 
-    "postinstall": "prisma generate"
+    "backend:seed": "npm --prefix ../Nomina-backend run seed"
   },
   "repository": {
     "type": "git",
