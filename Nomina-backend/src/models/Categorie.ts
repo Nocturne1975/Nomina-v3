@@ -1,8 +1,9 @@
-import { NomPersonnage } from "./NomPersonnage";
+import { Prenom } from "./NomPersonnage";
 import { Lieux } from "./Lieux";
 import { FragmentsHistoire } from "./FragmentsHistoire";
 import { Titre } from "./Titre";
 import { Concept } from "./Concept";
+import { Personnage } from "./Personnage";
 
 export interface Categorie {
   id: number;
@@ -10,7 +11,8 @@ export interface Categorie {
   description?: string;
   createdAt: Date;
   updatedAt: Date;
-  nomPersonnages?: NomPersonnage[];
+  nomPersonnages?: Prenom[];
+  personnages?: Personnage[];
   lieux?: Lieux[];
   fragmentsHistoire?: FragmentsHistoire[];
   titres?: Titre[];

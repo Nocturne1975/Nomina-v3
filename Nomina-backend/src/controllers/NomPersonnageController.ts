@@ -28,7 +28,7 @@ const nomPersonnageBodySchema = z.object({
 // GET - lister tous les noms de personnage
 export const getNomPersonnages = async (_req: Request, res: Response) => {
   try {
-    const noms = await prisma.nomPersonnage.findMany({
+    const noms = await prisma.prenom.findMany({
       include: {
         culture: true,
         categorie: true,
@@ -46,7 +46,7 @@ export const getNomPersonnages = async (_req: Request, res: Response) => {
 export const getNomPersonnageById = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const nom = await prisma.nomPersonnage.findUnique({
+    const nom = await prisma.prenom.findUnique({
       where: { id },
       include: {
         culture: true,
@@ -77,7 +77,7 @@ export const createNomPersonnage = async (req: Request, res: Response) => {
 
     const canonicalGenre = canonicalizeGenre(genre);
 
-    const newNomPersonnage = await prisma.nomPersonnage.create({
+    const newNomPersonnage = await prisma.prenom.create({
       data: {
         valeur: valeur ?? null,
         genre: canonicalGenre,
@@ -107,7 +107,7 @@ export const updateNomPersonnage = async (req: Request, res: Response) => {
     const cultureIdNum = cultureId !== undefined && cultureId !== null ? Number(cultureId) : null;
     const categorieIdNum = categorieId !== undefined && categorieId !== null ? Number(categorieId) : null;
 
-    const updated = await prisma.nomPersonnage.update({
+    const updated = await prisma.prenom.update({
       where: { id: Number(req.params.id) },
       data: {
         valeur: valeur ?? null,
@@ -127,7 +127,7 @@ export const updateNomPersonnage = async (req: Request, res: Response) => {
 // DELETE - supprimer un NomPersonnage
 export const deleteNomPersonnage = async (req: Request, res: Response) => {
   try {
-    await prisma.nomPersonnage.delete({ where: { id: Number(req.params.id) } });
+    await prisma.prenom.delete({ where: { id: Number(req.params.id) } });
     res.status(204).end();
   } catch (error) {
     console.error('Erreur deleteNomPersonnage:', error);
@@ -138,7 +138,7 @@ export const deleteNomPersonnage = async (req: Request, res: Response) => {
 // Aggregation - obtenir le nombre total de NomPersonnage
 export const totalNomPersonnage = async (_req: Request, res: Response) => {
   try {
-    const count = await prisma.nomPersonnage.count();
+    const count = await prisma.prenom.count();
     res.json({ total: count });
   } catch (error) {
     console.error('Erreur totalNomPersonnage:', error);

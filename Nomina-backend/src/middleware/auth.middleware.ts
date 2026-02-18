@@ -1,6 +1,19 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '@clerk/backend';
 
+const getAdminUserIds = (): string[] => {
+  const csv = process.env.ADMIN_CLERK_USER_IDS;
+  if (csv && csv.trim().length > 0) {
+    return csv
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  const single = process.env.ADMIN_CLERK_USER_ID;
+  return single && single.trim().length > 0 ? [single.trim()] : [];
+};
+
 const extractBearerToken = (req: Request): string | null => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return null;
@@ -17,7 +30,10 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (!secretKey) {
     console.error('CLERK_SECRET_KEY non défini');
-    return res.status(500).json({ error: 'Configuration serveur manquante' });
+    return res.status(500).json({
+      error:
+        'Configuration serveur manquante: CLERK_SECRET_KEY non défini (configure Nomina-backend/.env puis redémarre le serveur)',
+    });
   }
 
   try {
@@ -38,14 +54,16 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 };
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  const adminUserId = process.env.ADMIN_CLERK_USER_ID;
-  if (!adminUserId) {
-    return res.status(500).json({ error: 'ADMIN_CLERK_USER_ID non défini' });
+  const adminUserIds = getAdminUserIds();
+  if (adminUserIds.length === 0) {
+    return res
+      .status(500)
+      .json({ error: 'ADMIN_CLERK_USER_IDS (ou ADMIN_CLERK_USER_ID) non défini' });
   }
 
   const userId = req.auth?.userId;
   if (!userId) return res.status(401).json({ error: 'Non authentifié' });
-  if (userId !== adminUserId) return res.status(403).json({ error: 'Accès refusé' });
+  if (!adminUserIds.includes(userId)) return res.status(403).json({ error: 'Accès refusé' });
 
   next();
 };

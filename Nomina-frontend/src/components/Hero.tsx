@@ -3,6 +3,7 @@ import { Sparkles, ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
+import { Link } from "react-router-dom";
 
 export function Hero() {
   const [kind, setKind] = useState<"character" | "place" | "creature">(
@@ -157,20 +158,29 @@ export function Hero() {
 
           {/* Description */}
           <p className="text-lg md:text-xl text-[#d4c5f9] mb-8 max-w-2xl mx-auto">
-            Une API innovante dédiée à la narration et à la génération de noms. 
+            Une API innovante dédiée à la narration et à la création de contenu à partir de quelques mots. 
             Créez des personnages, des lieux et des créatures avec des histoires captivantes.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Button size="lg" className="bg-[#7b3ff2] hover:bg-[#a67be8] text-white px-8 gap-2">
-              Commencer gratuitement
-              <ArrowRight className="w-5 h-5" />
+            <Button asChild size="lg" className="bg-[#7b3ff2] hover:bg-[#a67be8] text-white px-8 gap-2">
+              <Link to="/register">
+                S’inscrire
+                <ArrowRight className="w-5 h-5" />
+              </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="border-[#7b3ff2] text-[#d4c5f9] hover:bg-[#7b3ff2]/20">
-              <a href="#/docs">Voir la documentation</a>
+              <Link to="/docs">Voir la documentation</Link>
             </Button>
           </div>
+
+          <p className="text-sm text-[#d4c5f9] -mt-8 mb-12">
+            Déjà un compte ?{" "}
+            <Link to="/login" className="text-[#e8b4f0] hover:underline">
+              Se connecter
+            </Link>
+          </p>
 
           {/* Mini UI: Générateur */}
           <Card className="bg-[#f8f6fc] border-[#d4c5f9] shadow-xl shadow-[#7b3ff2]/10 max-w-2xl mx-auto text-left">

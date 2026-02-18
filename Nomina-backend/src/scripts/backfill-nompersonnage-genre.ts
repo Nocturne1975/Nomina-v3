@@ -59,10 +59,10 @@ async function main() {
     OR: [{ genre: null }, { genre: "" }],
   };
 
-  const totalMissing = await prisma.nomPersonnage.count({ where });
+  const totalMissing = await prisma.prenom.count({ where });
   console.log(`Missing genre count: ${totalMissing}`);
 
-  const rows = await prisma.nomPersonnage.findMany({
+  const rows = await prisma.prenom.findMany({
     where,
     select: { id: true, valeur: true },
     orderBy: { id: "asc" },
@@ -116,7 +116,7 @@ async function main() {
     const batch = updates.slice(i, i + batchSize);
     await prisma.$transaction(
       batch.map((u) =>
-        prisma.nomPersonnage.update({
+        prisma.prenom.update({
           where: { id: u.id },
           data: { genre: u.genre },
         })

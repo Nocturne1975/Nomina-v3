@@ -44,3 +44,34 @@
     font-family: 'JetBrains Mono', monospace;
   }
 }
+
+@layer components {
+  /* Clerk (SignIn/SignUp): garantir la lisibilité des champs */
+  :where(.cl-rootBox) {
+    color: var(--violet-deep);
+  }
+
+  :where(.cl-formFieldLabel) {
+    color: var(--violet-deep);
+  }
+
+  :where(.cl-formFieldInput, .cl-input) {
+    background: var(--white-pure);
+    color: var(--violet-deep);
+    border: 1px solid var(--lavender);
+    border-radius: 12px;
+    min-height: 40px;
+  }
+
+  :where(.cl-formButtonPrimary) {
+    background: var(--violet-vibrant);
+  }
+
+  :where(.cl-formButtonPrimary:hover) {
+    background: var(--violet-light);
+  }
+
+  :where(.cl-footerActionLink) {
+    color: var(--violet-vibrant);
+  }
+}

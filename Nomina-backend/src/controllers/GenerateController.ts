@@ -17,6 +17,44 @@ function splitKeywords(raw: string | null | undefined): string[] {
     .slice(0, 6);
 }
 
+function scoreKeywordMatch(text: string, keywords: string[]): number {
+  const source = (text || "").toLowerCase();
+  if (!source || keywords.length === 0) return 0;
+
+  let score = 0;
+  for (const kwRaw of keywords) {
+    const kw = kwRaw.toLowerCase();
+    if (!kw) continue;
+    if (source === kw) score += 200;
+    else if (source.includes(kw)) score += 60;
+  }
+  return score;
+}
+
+function expandTitreKeywordTerms(keywords: string[]): string[] {
+  const out = new Set<string>();
+
+  const add = (v: string) => {
+    const s = v.trim().toLowerCase();
+    if (s) out.add(s);
+  };
+
+  for (const kw of keywords) {
+    const k = kw.trim().toLowerCase();
+    if (!k) continue;
+    add(k);
+
+    if (k.includes("feu") || k.includes("incend")) {
+      ["pompier", "incendie", "brasier", "flamme", "secours"].forEach(add);
+    }
+    if (k.includes("comba") || k.includes("guer") || k.includes("bata")) {
+      ["combat", "armée", "armee", "guerrier", "soldat", "sécurité", "securite"].forEach(add);
+    }
+  }
+
+  return Array.from(out);
+}
+
 const countQuerySchema = z.coerce.number().int().min(1).max(200).default(10);
 const optionalIdQuerySchema = z.coerce.number().int().optional();
 const optionalStringQuerySchema = z
@@ -34,6 +72,7 @@ export const generateNpcs = async (req: Request, res: Response) => {
         categorieId: optionalIdQuerySchema,
         genre: optionalStringQuerySchema,
         seed: optionalStringQuerySchema,
+        keywords: optionalStringQuerySchema,
       })
       .safeParse(req.query);
 
@@ -44,10 +83,43 @@ export const generateNpcs = async (req: Request, res: Response) => {
       });
     }
 
-    const { count, cultureId, categorieId, genre, seed } = parsed.data;
+    const { count, cultureId, categorieId, genre, seed, keywords } = parsed.data;
 
-    const result = await generateNpcIdeas({ count, cultureId, categorieId, genre, seed });
-    res.json(result);
+    const kws = splitKeywords(keywords);
+    const requestedCount = kws.length > 0 ? Math.min(count * 3, 60) : count;
+
+    const result = await generateNpcIdeas({ count: requestedCount, cultureId, categorieId, genre, seed });
+
+    if (kws.length === 0) {
+      return res.json(result);
+    }
+
+    const baseItems = Array.isArray((result as any).items) ? (result as any).items : [];
+    const ranked = baseItems
+      .map((it: any) => ({
+        item: it,
+        score: scoreKeywordMatch(`${it?.name ?? ""} ${it?.backstory ?? ""}`, kws),
+      }))
+      .sort((a: any, b: any) => b.score - a.score);
+
+    const matched = ranked.filter((x: any) => x.score > 0).map((x: any) => x.item);
+    const fallback = ranked.map((x: any) => x.item);
+    const items = (matched.length > 0 ? matched : fallback).slice(0, count);
+
+    return res.json({
+      ...(result as any),
+      count: items.length,
+      filters: {
+        ...((result as any).filters ?? {}),
+        keywords: kws.join(", "),
+      },
+      items,
+      info: matched.length > 0 ? `Résultats classés par pertinence pour: ${kws.join(", ")}` : undefined,
+      warning:
+        matched.length === 0
+          ? `Aucun PNJ ne matche directement: ${kws.join(", ")}. Suggestions affichées.`
+          : (result as any).warning,
+    });
   } catch (error) {
     console.error("Erreur generateNpcs:", error);
     res.status(500).json({ error: "Erreur serveur" });
@@ -84,6 +156,8 @@ function normalizeGenreValues(input: string): string[] {
       "Neutral",
       "neutral",
     ].forEach(add);
+  } else if (["creature", "créature", "monster", "monstre", "beast", "bête"].includes(lc)) {
+    ["Creature", "creature", "Créature", "créature", "Monster", "monster", "Monstre", "monstre", "Beast", "beast", "Bête", "bête"].forEach(add);
   } else {
     // Si c'est une valeur custom (ex: "androgyne"), on la garde telle quelle.
     add(raw);
@@ -269,6 +343,7 @@ export const generateNomPersonnages = async (req: Request, res: Response) => {
         titreId: optionalIdQuerySchema,
         genre: optionalStringQuerySchema,
         seed: optionalStringQuerySchema,
+        keywords: optionalStringQuerySchema,
       })
       .safeParse(req.query);
 
@@ -279,7 +354,10 @@ export const generateNomPersonnages = async (req: Request, res: Response) => {
       });
     }
 
-    const { count, cultureId, universId, categorieId, titreId, genre, seed } = parsed.data;
+    const { count, cultureId, universId, categorieId, titreId, genre, seed, keywords } = parsed.data;
+
+    const kws = splitKeywords(keywords);
+    const requestedCount = kws.length > 0 ? Math.min(count * 3, 60) : count;
 
     let effectiveCultureId = cultureId;
     let effectiveCategorieId = categorieId;
@@ -345,7 +423,7 @@ export const generateNomPersonnages = async (req: Request, res: Response) => {
     }
 
     const generated = await generateNpcIdeas({
-      count,
+      count: requestedCount,
       cultureId: effectiveCultureId,
       categorieId: effectiveCategorieId,
       universId,
@@ -378,7 +456,7 @@ export const generateNomPersonnages = async (req: Request, res: Response) => {
       return take.length > 0 ? take : null;
     };
 
-    const items = Array.isArray((generated as any).items)
+    const mappedItems = Array.isArray((generated as any).items)
       ? (generated as any).items.map((it: any) => ({
           nameId: it.nameId ?? null,
           name: it.name ?? null,
@@ -395,6 +473,17 @@ export const generateNomPersonnages = async (req: Request, res: Response) => {
         }))
       : [];
 
+    const ranked = mappedItems
+      .map((it: any) => ({
+        item: it,
+        score: scoreKeywordMatch(`${it?.name ?? ""} ${it?.displayName ?? ""} ${it?.miniBio ?? ""}`, kws),
+      }))
+      .sort((a: any, b: any) => b.score - a.score);
+
+    const matched = kws.length > 0 ? ranked.filter((x: any) => x.score > 0).map((x: any) => x.item) : [];
+    const fallback = kws.length > 0 ? ranked.map((x: any) => x.item) : mappedItems;
+    const items = (kws.length > 0 ? (matched.length > 0 ? matched : fallback) : mappedItems).slice(0, count);
+
     res.json({
       seed: (generated as any).seed,
       count: items.length,
@@ -406,12 +495,129 @@ export const generateNomPersonnages = async (req: Request, res: Response) => {
         }),
         universId: universId ?? null,
         titreId: selectedTitre?.id ?? (titreId ?? null),
+        keywords: kws.length > 0 ? kws.join(", ") : null,
       },
       items,
-      warning: (generated as any).warning,
+      warning:
+        kws.length > 0 && matched.length === 0
+          ? `Aucun nom de personnage ne matche directement: ${kws.join(", ")}. Suggestions affichées.`
+          : (generated as any).warning,
+      info: kws.length > 0 && matched.length > 0 ? `Résultats classés par pertinence pour: ${kws.join(", ")}` : undefined,
     });
   } catch (error) {
     console.error("Erreur generateNomPersonnages:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// GET /generate/nom-famille
+export const generateNomFamille = async (req: Request, res: Response) => {
+  try {
+    const parsed = z
+      .object({
+        count: countQuerySchema,
+        cultureId: optionalIdQuerySchema,
+        categorieId: optionalIdQuerySchema,
+        seed: optionalStringQuerySchema,
+        keywords: optionalStringQuerySchema,
+      })
+      .safeParse(req.query);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: "Paramètres invalides",
+        issues: parsed.error.issues,
+      });
+    }
+
+    const { count, cultureId, categorieId, seed, keywords } = parsed.data;
+
+    const rng = createRng(seed);
+    const effectiveSeed = seed ?? rng.seed;
+
+    // Mode recherche par keywords
+    if (keywords && keywords.trim()) {
+      const kws = keywords
+        .split(/[,;]+/)
+        .map((k) => k.trim())
+        .filter(Boolean);
+
+      if (kws.length > 0) {
+        const rows = await prisma.nomFamille.findMany({
+          where: {
+            ...(cultureId ? { cultureId } : {}),
+            ...(categorieId ? { categorieId } : {}),
+            OR: kws.map((kw) => ({
+              valeur: { contains: kw, mode: "insensitive" },
+            })),
+          },
+          select: { id: true, valeur: true, cultureId: true, categorieId: true },
+          orderBy: { id: "asc" },
+        });
+
+        if (rows.length > 0) {
+          const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((nf) => ({
+            id: nf.id,
+            valeur: nf.valeur,
+            cultureId: nf.cultureId ?? null,
+            categorieId: nf.categorieId ?? null,
+          }));
+
+          return res.json({
+            seed: effectiveSeed,
+            count: items.length,
+            filters: {
+              cultureId: cultureId ?? null,
+              categorieId: categorieId ?? null,
+              keywords: kws.join(", "),
+            },
+            items,
+            info: `Résultats trouvés pour: ${kws.join(", ")}`,
+          });
+        } else {
+          return res.json({
+            seed: effectiveSeed,
+            count: 0,
+            filters: {
+              cultureId: cultureId ?? null,
+              categorieId: categorieId ?? null,
+              keywords: kws.join(", "),
+            },
+            items: [],
+            warning: `Aucun résultat dans la base pour: ${kws.join(", ")}. Génération créative à venir.`,
+          });
+        }
+      }
+    }
+
+    const rows = await prisma.nomFamille.findMany({
+      where: {
+        ...(cultureId ? { cultureId } : {}),
+        ...(categorieId ? { categorieId } : {}),
+      },
+      select: { id: true, valeur: true, cultureId: true, categorieId: true },
+      orderBy: { id: "asc" },
+    });
+
+    const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((nf) => ({
+      id: nf.id,
+      valeur: nf.valeur,
+      cultureId: nf.cultureId ?? null,
+      categorieId: nf.categorieId ?? null,
+    }));
+
+    res.json({
+      seed: effectiveSeed,
+      count: items.length,
+      filters: {
+        cultureId: cultureId ?? null,
+        categorieId: categorieId ?? null,
+      },
+      items,
+      warning: rows.length === 0 ? "Aucun nom de famille ne match les filtres." : undefined,
+    });
+  } catch (error) {
+    console.error("Erreur generateNomFamille:", error);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
@@ -424,6 +630,7 @@ export const generateLieux = async (req: Request, res: Response) => {
         count: countQuerySchema,
         categorieId: optionalIdQuerySchema,
         seed: optionalStringQuerySchema,
+        keywords: optionalStringQuerySchema,
       })
       .safeParse(req.query);
 
@@ -434,10 +641,83 @@ export const generateLieux = async (req: Request, res: Response) => {
       });
     }
 
-    const { count, categorieId, seed } = parsed.data;
+    const { count, categorieId, seed, keywords } = parsed.data;
 
     const rng = createRng(seed);
     const effectiveSeed = seed ?? rng.seed;
+
+    // Mode recherche par keywords
+    if (keywords && keywords.trim()) {
+      const kws = keywords
+        .split(/[,;]+/)
+        .map((k) => k.trim())
+        .filter(Boolean);
+
+      if (kws.length > 0) {
+        const rows = await prisma.lieux.findMany({
+          where: {
+            ...(categorieId ? { categorieId } : {}),
+            OR: kws.map((kw) => ({
+              OR: [
+                { value: { contains: kw, mode: "insensitive" } },
+                { type: { contains: kw, mode: "insensitive" } },
+              ],
+            })),
+          },
+          select: { id: true, value: true, type: true, categorieId: true },
+          orderBy: { id: "asc" },
+        });
+
+        if (rows.length > 0) {
+          const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((l) => ({
+            id: l.id,
+            value: l.value,
+            type: l.type ?? null,
+            categorieId: l.categorieId ?? null,
+          }));
+
+          return res.json({
+            seed: effectiveSeed,
+            count: items.length,
+            filters: {
+              categorieId: categorieId ?? null,
+              keywords: kws.join(", "),
+            },
+            items,
+            info: `Résultats trouvés pour: ${kws.join(", ")}`,
+          });
+        } else {
+          const fallbackRows = await prisma.lieux.findMany({
+            where: {
+              ...(categorieId ? { categorieId } : {}),
+            },
+            select: { id: true, value: true, type: true, categorieId: true },
+            orderBy: { id: "asc" },
+          });
+
+          const items = sampleWithoutReplacement(fallbackRows, Math.min(count, fallbackRows.length), rng.next).map((l) => ({
+            id: l.id,
+            value: l.value,
+            type: l.type ?? null,
+            categorieId: l.categorieId ?? null,
+          }));
+
+          return res.json({
+            seed: effectiveSeed,
+            count: items.length,
+            filters: {
+              categorieId: categorieId ?? null,
+              keywords: kws.join(", "),
+            },
+            items,
+            warning:
+              fallbackRows.length === 0
+                ? `Aucun lieu disponible avec les filtres demandés.`
+                : `Aucun lieu trouvé pour "${kws.join(", ")}". Voici des suggestions proches de votre univers.`,
+          });
+        }
+      }
+    }
 
     const rows = await prisma.lieux.findMany({
       where: {
@@ -478,6 +758,7 @@ export const generateFragmentsHistoire = async (req: Request, res: Response) => 
         genre: optionalStringQuerySchema,
         appliesTo: optionalStringQuerySchema,
         seed: optionalStringQuerySchema,
+        keywords: optionalStringQuerySchema,
       })
       .safeParse(req.query);
 
@@ -488,10 +769,12 @@ export const generateFragmentsHistoire = async (req: Request, res: Response) => 
       });
     }
 
-    const { count, cultureId, categorieId, genre, appliesTo, seed } = parsed.data;
+    const { count, cultureId, categorieId, genre, appliesTo, seed, keywords } = parsed.data;
 
     const rng = createRng(seed);
     const effectiveSeed = seed ?? rng.seed;
+
+    const kws = splitKeywords(keywords);
 
     const rows = await prisma.fragmentsHistoire.findMany({
       where: {
@@ -499,6 +782,17 @@ export const generateFragmentsHistoire = async (req: Request, res: Response) => 
         categorieId,
         genre: buildGenreWhere(genre),
         appliesTo,
+        ...(kws.length > 0
+          ? {
+              OR: kws.map((kw) => ({
+                OR: [
+                  { texte: { contains: kw, mode: "insensitive" } },
+                  { appliesTo: { contains: kw, mode: "insensitive" } },
+                  { genre: { contains: kw, mode: "insensitive" } },
+                ],
+              })),
+            }
+          : {}),
       },
       select: { id: true, texte: true, appliesTo: true, genre: true, cultureId: true, categorieId: true },
       orderBy: { id: "asc" },
@@ -521,9 +815,14 @@ export const generateFragmentsHistoire = async (req: Request, res: Response) => 
         categorieId: categorieId ?? null,
         genre: genre ?? null,
         appliesTo: appliesTo ?? null,
+        keywords: kws.length > 0 ? kws.join(", ") : null,
       },
       items,
-      warning: rows.length === 0 ? "Aucun Fragment d'histoire ne match les filtres." : undefined,
+      warning: rows.length === 0
+        ? kws.length > 0
+          ? `Aucun Fragment d'histoire trouvé pour: ${kws.join(", ")}.`
+          : "Aucun Fragment d'histoire ne match les filtres."
+        : undefined,
     });
   } catch (error) {
     console.error("Erreur generateFragmentsHistoire:", error);
@@ -541,6 +840,7 @@ export const generateTitres = async (req: Request, res: Response) => {
         categorieId: optionalIdQuerySchema,
         genre: optionalStringQuerySchema,
         seed: optionalStringQuerySchema,
+        keywords: optionalStringQuerySchema,
       })
       .safeParse(req.query);
 
@@ -551,10 +851,96 @@ export const generateTitres = async (req: Request, res: Response) => {
       });
     }
 
-    const { count, cultureId, categorieId, genre, seed } = parsed.data;
+    const { count, cultureId, categorieId, genre, seed, keywords } = parsed.data;
 
     const rng = createRng(seed);
     const effectiveSeed = seed ?? rng.seed;
+
+    if (keywords && keywords.trim()) {
+      const kws = splitKeywords(keywords);
+      const expandedTerms = expandTitreKeywordTerms(kws);
+
+      if (expandedTerms.length > 0) {
+        const rows = await prisma.titre.findMany({
+          where: {
+            cultureId,
+            categorieId,
+            genre: buildGenreWhere(genre),
+            OR: expandedTerms.map((term) => ({
+              OR: [
+                { valeur: { contains: term, mode: "insensitive" } },
+                { type: { contains: term, mode: "insensitive" } },
+              ],
+            })),
+          },
+          select: { id: true, valeur: true, type: true, genre: true, cultureId: true, categorieId: true },
+          orderBy: { id: "asc" },
+        });
+
+        const lcBase = kws.map((k) => k.toLowerCase());
+        const lcExpanded = expandedTerms;
+
+        const scoreTitre = (t: { valeur: string; type: string | null }) => {
+          const v = t.valeur.toLowerCase();
+          const ty = (t.type ?? "").toLowerCase();
+          let score = 0;
+
+          const containsWord = (source: string, term: string) =>
+            new RegExp(`(^|[^\\p{L}])${term.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(?=$|[^\\p{L}])`, "iu").test(source);
+
+          for (const kw of lcBase) {
+            if (v === kw) score += 200;
+            else if (v.startsWith(kw)) score += 120;
+            else if (v.includes(kw)) score += 90;
+            if (ty.includes(kw)) score += 45;
+          }
+
+          for (const term of lcExpanded) {
+            if (lcBase.includes(term)) continue;
+            if (v === term) score += 180;
+            else if (containsWord(v, term)) score += 140;
+            else if (v.startsWith(term)) score += 120;
+            else if (v.includes(term)) score += 100;
+
+            if (containsWord(ty, term)) score += 12;
+            else if (ty.includes(term)) score += 8;
+          }
+
+          // Bonus métier explicite: "feu/combat" doit privilégier "pompier".
+          if ((lcBase.some((k) => k.includes("feu") || k.includes("incend")) || lcExpanded.includes("pompier")) && containsWord(v, "pompier")) {
+            score += 220;
+          }
+
+          return score;
+        };
+
+        const ranked = rows
+          .map((t) => ({ t, score: scoreTitre({ valeur: t.valeur, type: t.type ?? null }) }))
+          .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return a.t.valeur.localeCompare(b.t.valeur, "fr");
+          })
+          .map((x) => x.t);
+
+        const items = ranked.slice(0, count).map((t) => ({
+          id: t.id,
+          valeur: t.valeur,
+          type: t.type ?? null,
+          genre: t.genre ?? null,
+          cultureId: t.cultureId ?? null,
+          categorieId: t.categorieId ?? null,
+        }));
+
+        return res.json({
+          seed: effectiveSeed,
+          count: items.length,
+          filters: { cultureId: cultureId ?? null, categorieId: categorieId ?? null, genre: genre ?? null, keywords: kws.join(", ") },
+          items,
+          warning: rows.length === 0 ? `Aucun titre trouvé pour: ${kws.join(", ")}` : undefined,
+          info: rows.length > 0 ? `Titres classés par pertinence pour: ${kws.join(", ")}` : undefined,
+        });
+      }
+    }
 
     const rows = await prisma.titre.findMany({
       where: {
@@ -598,6 +984,7 @@ export const generateConcepts = async (req: Request, res: Response) => {
         conceptId: optionalIdQuerySchema,
         topic: optionalStringQuerySchema,
         seed: optionalStringQuerySchema,
+        keywords: optionalStringQuerySchema,
       })
       .safeParse(req.query);
 
@@ -608,12 +995,89 @@ export const generateConcepts = async (req: Request, res: Response) => {
       });
     }
 
-    const { count, categorieId, conceptId, topic, seed } = parsed.data;
+    const { count, categorieId, conceptId, topic, seed, keywords } = parsed.data;
 
     const requestedCategorieId = categorieId ?? null;
 
     const rng = createRng(seed);
     const effectiveSeed = seed ?? rng.seed;
+
+    // Mode recherche par keywords
+    if (keywords && keywords.trim()) {
+      const kws = keywords
+        .split(/[,;]+/)
+        .map((k) => k.trim())
+        .filter(Boolean);
+
+      if (kws.length > 0) {
+        const rows = await prisma.concept.findMany({
+          where: {
+            ...(requestedCategorieId ? { categorieId: requestedCategorieId } : {}),
+            OR: kws.map((kw) => ({
+              OR: [
+                { keywords: { contains: kw, mode: "insensitive" } },
+                { valeur: { contains: kw, mode: "insensitive" } },
+                { type: { contains: kw, mode: "insensitive" } },
+              ],
+            })),
+          },
+          select: {
+            id: true,
+            valeur: true,
+            type: true,
+            mood: true,
+            keywords: true,
+            categorieId: true,
+          },
+          orderBy: { id: "asc" },
+        });
+
+        if (rows.length > 0) {
+          const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((c) => {
+            const mood = c.mood ?? pick(["mystérieux", "épique", "sombre", "onirique", "tendu", "lumineux"], rng.next);
+            const ckws = splitKeywords(c.keywords);
+            const k1 = ckws[0] ?? pick(["secret", "quête", "rituel", "héritage", "frontière", "anomalie"], rng.next);
+            const k2 = ckws[1] ?? pick(["alliance", "trahison", "mémoire", "artefact", "serment", "mensonge"], rng.next);
+            const k3 = ckws[2] ?? pick(["prix", "conséquence", "danger", "révélation", "dilemme", "menace"], rng.next);
+
+            return {
+              id: c.id,
+              valeur: c.valeur,
+              type: c.type ?? null,
+              mood,
+              keyword1: k1,
+              keyword2: k2,
+              keyword3: k3,
+              categorieId: c.categorieId ?? null,
+            };
+          });
+
+          return res.json({
+            seed: effectiveSeed,
+            count: items.length,
+            filters: {
+              categorieId: requestedCategorieId,
+              keywords: kws.join(", "),
+            },
+            items,
+            info: `Résultats trouvés pour: ${kws.join(", ")}`,
+          });
+        } else {
+          // Aucun résultat dans la DB pour ces keywords
+          // TODO: Appeler LLM pour génération créative
+          return res.json({
+            seed: effectiveSeed,
+            count: 0,
+            filters: {
+              categorieId: requestedCategorieId,
+              keywords: kws.join(", "),
+            },
+            items: [],
+            warning: `Aucun résultat dans la base pour: ${kws.join(", ")}. Génération créative à venir.`,
+          });
+        }
+      }
+    }
 
     // Mode "brief" réaliste sur un sujet (ex: pub → chaussures)
     if (topic && topic.length > 0) {

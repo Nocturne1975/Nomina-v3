@@ -1,18 +1,47 @@
 import { useEffect, useState } from "react";
 import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-react";
 import { apiFetch, ApiError } from "../lib/api";
+import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
+import { Link } from "react-router-dom";
+import { 
+  Users, 
+  Globe, 
+  Tag, 
+  Lightbulb, 
+  Award, 
+  BookOpen, 
+  User, 
+  MapPin,
+  Sparkles,
+  TrendingUp,
+  Activity
+} from "lucide-react";
 
 type Me = { userId: string; isAdmin: boolean };
+type Stats = {
+  cultures: number;
+  categories: number;
+  concepts: number;
+  titres: number;
+  fragments: number;
+  nomPersonnages: number;
+  lieux: number;
+  users: number;
+};
 
 export function DashboardPage() {
   const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 
   if (!clerkEnabled) {
     return (
-      <main className="min-h-screen p-6">
-        <h1 className="text-3xl font-semibold mb-2">Dashboard</h1>
-        <p className="opacity-80">Auth désactivée (clé Clerk manquante).</p>
+      <main className="min-h-screen p-6 bg-gradient-to-b from-violet-50 via-white to-pink-50">
+        <div className="mx-auto w-full max-w-5xl">
+          <Card className="bg-white border-[#d4c5f9] p-6">
+            <h1 className="text-3xl font-semibold mb-2">Dashboard</h1>
+            <p className="opacity-80">Auth désactivée (clé Clerk manquante).</p>
+          </Card>
+        </div>
       </main>
     );
   }
@@ -20,9 +49,16 @@ export function DashboardPage() {
   return (
     <>
       <SignedOut>
-        <main className="min-h-screen p-6">
-          <h1 className="text-3xl font-semibold mb-2">Dashboard</h1>
-          <p className="opacity-80">Connecte-toi pour accéder au dashboard.</p>
+        <main className="min-h-screen p-6 bg-gradient-to-b from-violet-50 via-white to-pink-50">
+          <div className="mx-auto w-full max-w-5xl">
+            <Card className="bg-white border-[#d4c5f9] p-6">
+              <h1 className="text-3xl font-semibold mb-2">Dashboard</h1>
+              <p className="opacity-80 mb-4">Connecte-toi pour accéder au dashboard.</p>
+              <Button asChild className="bg-[#7b3ff2] hover:bg-[#a67be8] text-white">
+                <Link to="/login">Connexion</Link>
+              </Button>
+            </Card>
+          </div>
         </main>
       </SignedOut>
       <SignedIn>
@@ -37,6 +73,8 @@ function DashboardInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [me, setMe] = useState<Me | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,53 +99,309 @@ function DashboardInner() {
     };
   }, [getToken]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setStatsLoading(true);
+      try {
+        const token = await getToken();
+        const [cultures, categories, concepts, titres, fragments, nomPersonnages, lieux, users] = await Promise.all([
+          apiFetch<{ total: number }>("/cultures/total", { token }).catch(() => ({ total: 0 })),
+          apiFetch<{ total: number }>("/categories/total", { token }).catch(() => ({ total: 0 })),
+          apiFetch<{ total: number }>("/concepts/total", { token }).catch(() => ({ total: 0 })),
+          apiFetch<{ total: number }>("/titres/total", { token }).catch(() => ({ total: 0 })),
+          apiFetch<{ total: number }>("/fragmentsHistoire/total", { token }).catch(() => ({ total: 0 })),
+          apiFetch<{ total: number }>("/nomPersonnages/total", { token }).catch(() => ({ total: 0 })),
+          apiFetch<{ total: number }>("/lieux/total", { token }).catch(() => ({ total: 0 })),
+          me?.isAdmin 
+            ? apiFetch<{ total: number }>("/users/total", { token }).catch(() => ({ total: 0 }))
+            : Promise.resolve({ total: 0 }),
+        ]);
+
+        if (!cancelled) {
+          setStats({
+            cultures: cultures.total,
+            categories: categories.total,
+            concepts: concepts.total,
+            titres: titres.total,
+            fragments: fragments.total,
+            nomPersonnages: nomPersonnages.total,
+            lieux: lieux.total,
+            users: users.total,
+          });
+        }
+      } catch (e) {
+        if (!cancelled) console.error("Erreur chargement stats:", e);
+      } finally {
+        if (!cancelled) setStatsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, me?.isAdmin]);
+
   return (
-    <main className="min-h-screen p-6">
-      <h1 className="text-3xl font-semibold mb-6">Dashboard</h1>
-
-      {loading ? <p>Chargement…</p> : null}
-      {error ? <p className="text-red-600">{error}</p> : null}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 border-[#d4c5f9]">
-          <h2 className="text-lg font-semibold mb-2">Session</h2>
-          {me ? (
-            <div className="space-y-1">
-              <div>
-                <span className="opacity-70">userId:</span> <span className="font-mono">{me.userId}</span>
-              </div>
-              <div>
-                <span className="opacity-70">admin:</span> <span>{String(me.isAdmin)}</span>
-              </div>
+    <main className="min-h-screen p-6 bg-gradient-to-b from-violet-50 via-white to-pink-50">
+      <div className="mx-auto w-full max-w-7xl space-y-6">
+        {/* Header */}
+        <Card className="bg-white border-[#d4c5f9] p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-semibold flex items-center gap-3">
+                <Activity className="w-8 h-8 text-[#7b3ff2]" />
+                Dashboard
+              </h1>
+              <p className="opacity-80 mt-1">Bienvenue sur ta plateforme de génération créative</p>
             </div>
-          ) : (
-            <p className="opacity-70">Aucune information.</p>
-          )}
+            {me ? (
+              <div className="flex items-center gap-2">
+                <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${
+                  me.isAdmin 
+                    ? "bg-[#7b3ff2] text-white" 
+                    : "border border-[#d4c5f9] text-[#2d1b4e]"
+                }`}>
+                  {me.isAdmin ? "🛡️ Admin" : "👤 Utilisateur"}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          {loading ? <p className="mt-4 text-[#7b3ff2]">Chargement…</p> : null}
+          {error ? <p className="mt-4 text-red-600">{error}</p> : null}
         </Card>
 
-        <Card className="p-6 border-[#d4c5f9]">
-          <h2 className="text-lg font-semibold mb-2">Accès rapide</h2>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>
-              <a className="text-[#7b3ff2] hover:underline" href="#/generate">
-                Génération
-              </a>
-            </li>
-            <li>
-              <a className="text-[#7b3ff2] hover:underline" href="#/cultures">
-                Cultures (CRUD)
-              </a>
-            </li>
-            {me?.isAdmin ? (
-              <li>
-                <a className="text-[#7b3ff2] hover:underline" href="#/users">
-                  Utilisateurs (admin)
-                </a>
-              </li>
-            ) : null}
-          </ul>
-        </Card>
+        {/* Stats Grid */}
+        {statsLoading ? (
+          <Card className="bg-white border-[#d4c5f9] p-6">
+            <p className="text-center text-[#7b3ff2]">Chargement des statistiques…</p>
+          </Card>
+        ) : stats ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard
+                icon={<Globe className="w-5 h-5" />}
+                label="Cultures"
+                value={stats.cultures}
+                color="bg-blue-500"
+                link="/cultures"
+                isAdmin={me?.isAdmin}
+              />
+              <StatCard
+                icon={<Tag className="w-5 h-5" />}
+                label="Catégories"
+                value={stats.categories}
+                color="bg-purple-500"
+                link="/categories"
+                isAdmin={me?.isAdmin}
+              />
+              <StatCard
+                icon={<Lightbulb className="w-5 h-5" />}
+                label="Concepts"
+                value={stats.concepts}
+                color="bg-yellow-500"
+                link="/concepts"
+                isAdmin={me?.isAdmin}
+              />
+              <StatCard
+                icon={<Award className="w-5 h-5" />}
+                label="Titres"
+                value={stats.titres}
+                color="bg-pink-500"
+                link="/titres"
+                isAdmin={me?.isAdmin}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard
+                icon={<BookOpen className="w-5 h-5" />}
+                label="Fragments"
+                value={stats.fragments}
+                color="bg-indigo-500"
+                link="/fragments-histoire"
+                isAdmin={me?.isAdmin}
+              />
+              <StatCard
+                icon={<User className="w-5 h-5" />}
+                label="Personnages"
+                value={stats.nomPersonnages}
+                color="bg-green-500"
+                link="/nom-personnages"
+                isAdmin={me?.isAdmin}
+              />
+              <StatCard
+                icon={<MapPin className="w-5 h-5" />}
+                label="Lieux"
+                value={stats.lieux}
+                color="bg-red-500"
+                link="/lieux"
+                isAdmin={me?.isAdmin}
+              />
+              {me?.isAdmin ? (
+                <StatCard
+                  icon={<Users className="w-5 h-5" />}
+                  label="Utilisateurs"
+                  value={stats.users}
+                  color="bg-gray-500"
+                  link="/users"
+                  isAdmin={true}
+                />
+              ) : (
+                <Card className="bg-gradient-to-br from-[#7b3ff2] to-[#a67be8] text-white p-6 border-0">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white/20 p-3 rounded-lg">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold">
+                        {stats.cultures + stats.concepts + stats.titres}
+                      </div>
+                      <div className="text-sm opacity-90">Ressources totales</div>
+                    </div>
+                  </div>
+                </Card>
+              )}
+            </div>
+          </>
+        ) : null}
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-white p-6 border-[#d4c5f9]">
+            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#7b3ff2]" />
+              Actions rapides
+            </h2>
+            <div className="flex flex-col gap-2">
+              <Button
+                asChild
+                className="justify-start bg-gradient-to-r from-[#7b3ff2] to-[#a67be8] hover:from-[#6b2fe2] hover:to-[#9657d8] text-white"
+              >
+                <Link to="/generate">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Générer du contenu
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="justify-start border-[#d4c5f9] bg-[#7b3ff2]/10 hover:bg-[#7b3ff2]/20 text-[#2d1b4e]"
+              >
+                <Link to="/docs">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Documentation API
+                </Link>
+              </Button>
+              {me?.isAdmin ? (
+                <>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="justify-start border-[#d4c5f9] bg-white hover:bg-[#7b3ff2]/10 text-[#2d1b4e]"
+                  >
+                    <Link to="/cultures">
+                      <Globe className="w-4 h-4 mr-2" />
+                      Gérer les cultures
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="justify-start border-[#d4c5f9] bg-white hover:bg-[#7b3ff2]/10 text-[#2d1b4e]"
+                  >
+                    <Link to="/users">
+                      <Users className="w-4 h-4 mr-2" />
+                      Gérer les utilisateurs
+                    </Link>
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          </Card>
+
+          <Card className="bg-white p-6 border-[#d4c5f9]">
+            <h2 className="text-lg font-semibold mb-3">Session</h2>
+            {me ? (
+              <div className="space-y-3">
+                <div className="text-sm">
+                  <span className="opacity-70 block mb-1">Identifiant</span>
+                  <div className="font-mono text-xs bg-[#7b3ff2]/5 p-2 rounded border border-[#d4c5f9] break-all">
+                    {me.userId}
+                  </div>
+                </div>
+                <div className="text-sm">
+                  <span className="opacity-70 block mb-1">Niveau d'accès</span>
+                  <div className="mt-1 flex items-center gap-2">
+                    {me.isAdmin ? (
+                      <>
+                        <span className="bg-[#7b3ff2] text-white px-3 py-1 rounded-full text-xs font-medium">
+                          Administrateur
+                        </span>
+                        <span className="text-xs opacity-70">Accès complet</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="border border-[#d4c5f9] text-[#2d1b4e] px-3 py-1 rounded-full text-xs font-medium">
+                          Utilisateur
+                        </span>
+                        <span className="text-xs opacity-70">Accès standard</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="opacity-70">Aucune information.</p>
+            )}
+          </Card>
+        </div>
       </div>
     </main>
+  );
+}
+
+function StatCard({ 
+  icon, 
+  label, 
+  value, 
+  color, 
+  link, 
+  isAdmin 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  value: number; 
+  color: string; 
+  link: string;
+  isAdmin?: boolean;
+}) {
+  const content = (
+    <div className="flex items-center gap-3">
+      <div className={`${color} text-white p-3 rounded-lg`}>
+        {icon}
+      </div>
+      <div>
+        <div className="text-2xl font-bold text-[#2d1b4e]">{value.toLocaleString()}</div>
+        <div className="text-sm text-[#2d1b4e]/70">{label}</div>
+      </div>
+    </div>
+  );
+
+  if (isAdmin) {
+    return (
+      <Link to={link}>
+        <Card className="bg-white border-[#d4c5f9] p-6 hover:border-[#7b3ff2] hover:shadow-md transition-all cursor-pointer">
+          {content}
+        </Card>
+      </Link>
+    );
+  }
+
+  return (
+    <Card className="bg-white border-[#d4c5f9] p-6">
+      {content}
+    </Card>
   );
 }

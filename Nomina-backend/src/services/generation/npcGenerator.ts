@@ -11,6 +11,18 @@ function capFirst(s: string) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+function composeFullName(prenom: string, nomFamille: string | null | undefined) {
+  const first = (prenom ?? "").trim();
+  const family = (nomFamille ?? "").trim();
+  if (!family) return first;
+
+  const firstNorm = normalizeName(first);
+  const familyNorm = normalizeName(family);
+
+  if (firstNorm.includes(familyNorm)) return first;
+  return `${first} ${family}`.trim();
+}
+
 type GenerateNpcOptions = {
   count: number;
   cultureId?: number;
@@ -26,9 +38,8 @@ export async function generateNpcIdeas(options: GenerateNpcOptions) {
 
   const genreIn = options.genre ? normalizeGenreValues(options.genre) : undefined;
 
-  const names = await prisma.nomPersonnage.findMany({
+  const personnages = await prisma.personnage.findMany({
     where: {
-      valeur: { not: null },
       cultureId: options.cultureId,
       categorieId: options.categorieId,
       ...(options.universId !== undefined
@@ -40,8 +51,59 @@ export async function generateNpcIdeas(options: GenerateNpcOptions) {
         : {}),
       genre: genreIn && genreIn.length > 0 ? { in: genreIn } : options.genre,
     },
-    select: { id: true, valeur: true, genre: true, cultureId: true, categorieId: true },
+    select: {
+      id: true,
+      genre: true,
+      cultureId: true,
+      categorieId: true,
+      prenom: { select: { valeur: true, genre: true, cultureId: true, categorieId: true } },
+      nomFamille: { select: { valeur: true } },
+    },
   });
+
+  const names = personnages.length > 0
+    ? personnages
+        .map((p) => ({
+          id: p.id,
+          valeur: p.prenom?.valeur ?? null,
+          genre: p.genre ?? p.prenom?.genre ?? null,
+          cultureId: p.cultureId ?? p.prenom?.cultureId ?? null,
+          categorieId: p.categorieId ?? p.prenom?.categorieId ?? null,
+          familyName: p.nomFamille?.valeur ?? null,
+        }))
+        .filter((p) => !!p.valeur)
+    : await prisma.prenom.findMany({
+        where: {
+          valeur: { not: null },
+          cultureId: options.cultureId,
+          categorieId: options.categorieId,
+          ...(options.universId !== undefined
+            ? {
+                categorie: {
+                  universId: options.universId,
+                },
+              }
+            : {}),
+          genre: genreIn && genreIn.length > 0 ? { in: genreIn } : options.genre,
+        },
+        select: {
+          id: true,
+          valeur: true,
+          genre: true,
+          cultureId: true,
+          categorieId: true,
+          nomFamille: { select: { valeur: true } },
+        },
+      }).then((rows) =>
+        rows.map((r) => ({
+          id: r.id,
+          valeur: r.valeur,
+          genre: r.genre,
+          cultureId: r.cultureId,
+          categorieId: r.categorieId,
+          familyName: r.nomFamille?.valeur ?? null,
+        }))
+      );
 
   if (names.length === 0) {
     return {
@@ -49,10 +111,10 @@ export async function generateNpcIdeas(options: GenerateNpcOptions) {
       count: 0,
       filters: { cultureId: options.cultureId ?? null, categorieId: options.categorieId ?? null, genre: options.genre ?? null },
       items: [],
-      warning: "Aucun NomPersonnage ne match les filtres.",
+      warning: "Aucun Prénom ne match les filtres.",
     };
   }
-  const uniqueNames = dedupeBy(names, (n) => normalizeName(n.valeur ?? ""));
+  const uniqueNames = dedupeBy(names, (n) => normalizeName(composeFullName(n.valeur ?? "", n.familyName)));
     
   const fragmentWhere: any = { OR: [{ appliesTo: null }, { appliesTo: "npc" }] };
 
@@ -87,7 +149,9 @@ export async function generateNpcIdeas(options: GenerateNpcOptions) {
   for (let i = 0; i < options.count; i++) {
     const name = pickUnique(uniqueNames, usedNameIds, rng.next);
     const nameText = name.valeur ?? "Inconnu";
-    const nameLen = nameText.length;
+    const familyText = (name.familyName ?? "").trim();
+    const fullName = composeFullName(nameText, familyText);
+    const nameLen = fullName.length;
 
     const eligibleFragments = fragments.filter(f => {
       if (f.minNameLength !== null && f.minNameLength !== undefined && nameLen < f.minNameLength) return false;
@@ -101,7 +165,7 @@ export async function generateNpcIdeas(options: GenerateNpcOptions) {
     const baseBackstory = picked
       .map(p => p.texte)
       .join(" ")
-      .replaceAll("{name}", nameText)
+      .replaceAll("{name}", fullName)
       .trim();
 
     // Enrichissement: texte FR déterministe (évite lorem/latin)
@@ -164,12 +228,14 @@ export async function generateNpcIdeas(options: GenerateNpcOptions) {
     const backstory = [baseBackstory, `Rôle: ${role}.`, `Traits: ${trait1}, ${trait2}.`, hook, extra]
       .filter((s) => typeof s === "string" && s.trim().length > 0)
       .join(" ")
-      .replaceAll("{name}", nameText)
+      .replaceAll("{name}", fullName)
       .trim();
 
     items.push({
       nameId: name.id,
       name: nameText,
+      familyName: familyText || null,
+      fullName: fullName || nameText,
       genre: name.genre ?? null,
       cultureId: name.cultureId ?? null,
       categorieId: name.categorieId ?? null,

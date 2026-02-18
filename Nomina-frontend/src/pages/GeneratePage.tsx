@@ -25,12 +25,13 @@ function parseTitreTypeParts(type: string | null | undefined): { theme: string |
   return { theme: raw, section: null };
 }
 
-function normalizeGenreLabel(genre: string | null | undefined): "Masculin" | "Féminin" | "Neutre" | null {
+function normalizeGenreLabel(genre: string | null | undefined): "Masculin" | "Féminin" | "Neutre" | "Créature" | null {
   if (!genre) return null;
   const lc = genre.trim().toLowerCase();
   if (["m", "masculin", "male", "homme"].includes(lc)) return "Masculin";
   if (["f", "féminin", "feminin", "female", "femme"].includes(lc)) return "Féminin";
   if (["nb", "non-binaire", "non binaire", "nonbinaire", "neutre", "neutral"].includes(lc)) return "Neutre";
+  if (["creature", "créature", "monster", "monstre", "beast", "bête"].includes(lc)) return "Créature";
   return null;
 }
 
@@ -51,6 +52,9 @@ function getTitreDescription(titre: { valeur: string; type?: string | null; genr
   if (["baron", "baronne"].includes(lower)) return `Titre nobiliaire: seigneurie locale, souvent vassale${genreSuffix}.`;
   if (["marquis", "marquise"].includes(lower)) return `Titre nobiliaire: administration d'une marche/frontière${genreSuffix}.`;
   if (["seigneur", "dame"].includes(lower)) return `Titre féodal: autorité sur des terres et des sujets${genreSuffix}.`;
+  if (lower.includes("pompier") || lower.includes("sapeur")) {
+    return `Rôle de secours: intervient contre les incendies, protège la population et coordonne les urgences${genreSuffix}.`;
+  }
 
   // Descriptions par univers / thème
   if (inTheme("titres réels")) {
@@ -94,7 +98,17 @@ type Titre = {
 
 type NpcResult = unknown;
 
-type GenerateWhat = "npcs" | "lieux" | "nomPersonnages" | "fragmentsHistoire" | "titres" | "concepts";
+type GenerateWhat = 
+  | "npcs" 
+  | "lieux" 
+  | "nomPersonnages" 
+  | "nomFamille"
+  | "fragmentsHistoire" 
+  | "titres" 
+  | "concepts"
+  | "categories"
+  | "cultures"
+  | "universThematique";
 
 export function GeneratePage() {
   const [loadingInit, setLoadingInit] = useState(true);
@@ -105,6 +119,10 @@ export function GeneratePage() {
   const [cultures, setCultures] = useState<Culture[]>([]);
   const [concepts, setConcepts] = useState<Concept[]>([]);
   const [titres, setTitres] = useState<Titre[]>([]);
+
+  // NOUVEAU: Mots-clés principal
+  const [keywords, setKeywords] = useState<string>("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const [universId, setUniversId] = useState<number | "">("");
   const [categorieId, setCategorieId] = useState<number | "">("");
@@ -323,11 +341,14 @@ export function GeneratePage() {
       const endpointByWhat: Record<GenerateWhat, string> = {
         npcs: "/generate/npcs",
         lieux: "/generate/lieux",
-        // L'intention UX: un personnage = nom + courte biographie.
-        nomPersonnages: "/generate/nom-personnages",
+        nomPersonnages: "/generate/prenoms",
+        nomFamille: "/generate/nom-famille",
         fragmentsHistoire: "/generate/fragments-histoire",
         titres: "/generate/titres",
         concepts: "/generate/concepts",
+        categories: "/generate/categories",
+        cultures: "/generate/cultures",
+        universThematique: "/generate/univers",
       };
 
       const endpoint = endpointByWhat[generateWhat];
@@ -335,6 +356,67 @@ export function GeneratePage() {
       const qs = new URLSearchParams();
       qs.set("count", String(count));
       if (prefixe.trim()) qs.set("seed", prefixe.trim());
+
+      // NOUVEAU: Envoi des mots-clés au backend
+      const trimmedKeywords = keywords.trim();
+
+      // Pour catégories, cultures et univers, on utilise l'API de liste directe
+      if (generateWhat === "categories" || generateWhat === "cultures" || generateWhat === "universThematique") {
+        const directEndpoint = generateWhat === "categories" ? "/categories" 
+          : generateWhat === "cultures" ? "/cultures"
+          : "/univers";
+        
+        const data = await apiFetch<any[]>(directEndpoint);
+
+        const keywordList = trimmedKeywords
+          ? trimmedKeywords
+              .split(/[,;|]/g)
+              .map((k) => k.trim().toLowerCase())
+              .filter(Boolean)
+          : [];
+
+        const filteredData = keywordList.length > 0
+          ? data.filter((item) => {
+              const haystack = [
+                String(item?.name ?? ""),
+                String(item?.description ?? ""),
+                String(item?.type ?? ""),
+              ]
+                .join(" ")
+                .toLowerCase();
+
+              return keywordList.some((kw) => haystack.includes(kw));
+            })
+          : data;
+
+        const sourceData = filteredData.length > 0 ? filteredData : data;
+        
+        // Formater comme un résultat de génération
+        const formattedResult = {
+          seed: "direct",
+          count: Math.min(sourceData.length, count),
+          filters: { keywords: trimmedKeywords || null },
+          items: sourceData.slice(0, count),
+          info:
+            keywordList.length > 0
+              ? filteredData.length > 0
+                ? `${filteredData.length} éléments trouvés pour les mots-clés`
+                : `Aucun match direct pour "${trimmedKeywords}", suggestions affichées`
+              : `${data.length} éléments disponibles`,
+          warning:
+            keywordList.length > 0 && filteredData.length === 0
+              ? `Aucun résultat exact pour "${trimmedKeywords}".`
+              : undefined,
+        };
+        
+        setResult(formattedResult);
+        setLoading(false);
+        return;
+      }
+
+      if (trimmedKeywords) {
+        qs.set("keywords", trimmedKeywords);
+      }
 
       if (supportsGenre && genre) qs.set("genre", genre);
 
@@ -374,7 +456,7 @@ export function GeneratePage() {
   return (
     <main className="min-h-screen p-6">
       <h1 className="text-3xl text-[#2d1b4e] mb-6" style={{ fontFamily: "Cinzel, serif" }}>
-        Génération
+        Génération Créative
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -383,88 +465,24 @@ export function GeneratePage() {
           <div className="grid gap-4">
             {loadingInit ? <p>Chargement des listes…</p> : null}
 
-            <div>
-              <label className="text-sm text-[#2d1b4e]">Univers Thématique</label>
-              <select
-                value={universId}
-                onChange={(e) => setUniversId(e.target.value ? Number(e.target.value) : "")}
-                className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
-              >
-                <option value="">— Tous —</option>
-                {univers.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
+            {/* CHAMP PRINCIPAL: Mots-clés */}
+            <div className="bg-gradient-to-r from-[#2d1b4e]/5 to-[#6b5aa3]/5 p-4 rounded-lg border-2 border-[#6b5aa3]">
+              <label className="text-sm font-semibold text-[#2d1b4e] flex items-center gap-2">
+                <span className="text-lg">✨</span>
+                Mots-clés de génération
+              </label>
+              <Input
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                placeholder="Ex: dragon, feu, montagne, mystère, ancien..."
+                className="mt-2 text-base"
+              />
+              <p className="mt-2 text-xs text-[#6b5aa3]">
+                💡 <strong>Astuce:</strong> Entrez des mots-clés séparés par des virgules. Le système cherchera d'abord dans la base, puis générera du contenu créatif si besoin.
+              </p>
             </div>
 
-            <div>
-              <label className="text-sm text-[#2d1b4e]">Catégorie</label>
-              <select
-                value={categorieId}
-                onChange={(e) => setCategorieId(e.target.value ? Number(e.target.value) : "")}
-                className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
-              >
-                <option value="">— Toutes —</option>
-                {filteredCategories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm text-[#2d1b4e]">Quelle Culture</label>
-              <select
-                value={cultureId}
-                onChange={(e) => setCultureId(e.target.value ? Number(e.target.value) : "")}
-                className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
-              >
-                <option value="">— Toutes —</option>
-                {cultures.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {generateWhat === "concepts" ? (
-              <div>
-                <label className="text-sm text-[#2d1b4e]">Sujet / produit (optionnel)</label>
-                <Input
-                  value={conceptTopic}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setConceptTopic(next);
-                    if (next.trim()) setConceptId("");
-                  }}
-                  placeholder="Ex: chaussures, café, application de fitness…"
-                  className="mt-2"
-                />
-                <p className="mt-1 text-xs text-[#6b5aa3]">
-                  Si vous renseignez un sujet, l'API génère des concepts « réalistes » (brief marketing) même si la base de données n'a pas de concepts.
-                </p>
-
-                <label className="text-sm text-[#2d1b4e]">Quel Concept</label>
-                <select
-                  value={conceptId}
-                  onChange={(e) => {
-                    setConceptId(e.target.value ? Number(e.target.value) : "");
-                    setConceptTopic("");
-                  }}
-                  disabled={conceptTopic.trim().length > 0}
-                  className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
-                >
-                  <option value="">— Tous —</option>
-                  {filteredConcepts.map((c) => (
-                    <option key={c.id} value={c.id}>{c.valeur}</option>
-                  ))}
-                </select>
-                {categorieId !== "" && filteredConcepts.length === 0 ? (
-                  <p className="mt-1 text-xs text-[#6b5aa3]">
-                    Aucun concept n'est associé à cette catégorie pour l'instant. La génération utilisera tous les concepts disponibles.
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-
+            {/* Type de génération */}
             <div>
               <label className="text-sm text-[#2d1b4e]">Que voulez-vous générer ?</label>
               <select
@@ -472,104 +490,190 @@ export function GeneratePage() {
                 onChange={(e) => setGenerateWhat(e.target.value as GenerateWhat)}
                 className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
               >
-                <option value="npcs">🧙 Biographie (PNJ complet)</option>
-                <option value="nomPersonnages">👤 Personnage (nom + courte biographie)</option>
+                <option value="npcs">👤 Personnage complet (bio)</option>
+                <option value="nomPersonnages">📝 Prénom</option>
+                <option value="nomFamille">👨‍👩‍👧‍👦 Nom de famille</option>
                 <option value="lieux">🏛️ Lieux</option>
+                <option value="titres">👑 Titres</option>
                 <option value="concepts">💡 Concepts</option>
                 <option value="fragmentsHistoire">📜 Fragments d'histoire</option>
-                <option value="titres">👑 Titres</option>
+                <option value="categories">📁 Catégories</option>
+                <option value="cultures">🌍 Cultures</option>
+                <option value="universThematique">🌌 Univers thématique</option>
               </select>
             </div>
 
-            {supportsGenre ? (
-              <div>
-                <label className="text-sm text-[#2d1b4e]">Genre (optionnel)</label>
-                <select
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
-                >
-                  <option value="">— Tous —</option>
-                  <option value="masculin">Masculin</option>
-                  <option value="feminin">Féminin</option>
-                  <option value="nb">Non-binaire</option>
-                </select>
-              </div>
-            ) : null}
-
-            {supportsTitreChoice ? (
-              <div>
-                <label className="text-sm text-[#2d1b4e]">Titre (optionnel)</label>
-                <Popover open={titrePickerOpen} onOpenChange={setTitrePickerOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-2 w-full justify-between border-[#d4c5f9] bg-white text-[#2d1b4e]"
-                    >
-                      <span className="truncate">
-                        {selectedTitre ? selectedTitre.valeur : "— Aucun —"}
-                      </span>
-                      <span className="ml-2 text-[#c5bfd9]">⌄</span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[340px] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Rechercher un titre…" />
-                      <CommandList>
-                        <CommandEmpty>Aucun titre trouvé.</CommandEmpty>
-
-                        <CommandGroup>
-                          <CommandItem
-                            value="__none__"
-                            onSelect={() => {
-                              setTitreId("");
-                              setTitrePickerOpen(false);
-                            }}
-                          >
-                            — Aucun —
-                          </CommandItem>
-                        </CommandGroup>
-
-                        {filteredTitresGrouped.map((group) => (
-                          <CommandGroup key={group.label} heading={group.label}>
-                            {group.items.map((t) => (
-                              <CommandItem
-                                key={t.id}
-                                value={`${t.valeur} ${group.label}`}
-                                onSelect={() => {
-                                  setTitreId(t.id);
-                                  setTitrePickerOpen(false);
-                                }}
-                              >
-                                <div className="flex flex-col">
-                                  <span className="truncate">{t.valeur}</span>
-                                  <span className="text-xs text-[#6b5aa3] truncate">
-                                    {titreDescriptionById.get(t.id) ?? getTitreDescription(t)}
-                                  </span>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        ))}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                {selectedTitreDescription ? (
-                  <p className="mt-1 text-xs text-[#6b5aa3]">{selectedTitreDescription}</p>
-                ) : null}
-                <p className="mt-1 text-xs text-[#c5bfd9]">
-                  Exemple: choisir “Comte” + genre “Masculin” pour forcer un personnage “Comte Nom”.
-                </p>
-              </div>
-            ) : null}
-
+            {/* Nombre */}
             <div>
-              <label className="text-sm text-[#2d1b4e]">Nombre</label>
-              <Input type="number" value={count} min={1} max={200} onChange={(e) => setCount(Number(e.target.value))} />
+              <label className="text-sm text-[#2d1b4e]">Combien ?</label>
+              <Input
+                type="number"
+                min={1}
+                max={200}
+                value={count}
+                onChange={(e) => setCount(Number(e.target.value))}
+                className="mt-2"
+              />
             </div>
 
+            {/* FILTRES AVANCÉS (dépliables) */}
+            <div className="border-t border-[#d4c5f9] pt-4">
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="text-sm text-[#6b5aa3] hover:text-[#2d1b4e] flex items-center gap-2"
+              >
+                <span>{showAdvancedFilters ? "▼" : "▶"}</span>
+                Filtres avancés (optionnel)
+              </button>
+
+              {showAdvancedFilters && (
+                <div className="grid gap-4 mt-4">
+                  <div>
+                    <label className="text-sm text-[#2d1b4e]">Univers Thématique</label>
+                    <select
+                      value={universId}
+                      onChange={(e) => setUniversId(e.target.value ? Number(e.target.value) : "")}
+                      className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+                    >
+                      <option value="">— Tous —</option>
+                      {univers.map((u) => (
+                        <option key={u.id} value={u.id}>{u.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-[#2d1b4e]">Catégorie</label>
+                    <select
+                      value={categorieId}
+                      onChange={(e) => setCategorieId(e.target.value ? Number(e.target.value) : "")}
+                      className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+                    >
+                      <option value="">— Toutes —</option>
+                      {filteredCategories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-[#2d1b4e]">Culture</label>
+                    <select
+                      value={cultureId}
+                      onChange={(e) => setCultureId(e.target.value ? Number(e.target.value) : "")}
+                      className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+                    >
+                      <option value="">— Toutes —</option>
+                      {cultures.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {supportsGenre ? (
+                    <div>
+                      <label className="text-sm text-[#2d1b4e]">Genre</label>
+                      <select
+                        value={genre}
+                        onChange={(e) => setGenre(e.target.value)}
+                        className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+                      >
+                        <option value="">— Tous —</option>
+                        <option value="homme">Homme</option>
+                        <option value="femme">Femme</option>
+                        <option value="creature">Créature</option>
+                        <option value="neutre">Neutre</option>
+                      </select>
+                    </div>
+                  ) : null}
+
+                  {generateWhat === "concepts" ? (
+                    <div>
+                      <label className="text-sm text-[#2d1b4e]">Sujet / produit</label>
+                      <Input
+                        value={conceptTopic}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setConceptTopic(next);
+                          if (next.trim()) setConceptId("");
+                        }}
+                        placeholder="Ex: chaussures, café, application de fitness…"
+                        className="mt-2"
+                      />
+                    </div>
+                  ) : null}
+
+                  {supportsTitreChoice && (
+                    <div>
+                      <label className="text-sm text-[#2d1b4e]">Titre (optionnel)</label>
+                      <Popover open={titrePickerOpen} onOpenChange={setTitrePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="mt-2 w-full justify-between border-[#d4c5f9] bg-white text-[#2d1b4e]"
+                          >
+                            <span className="truncate">
+                              {selectedTitre ? selectedTitre.valeur : "— Aucun —"}
+                            </span>
+                            <span className="ml-2 text-[#c5bfd9]">⌄</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[340px] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Rechercher un titre…" />
+                            <CommandList>
+                              <CommandEmpty>Aucun titre trouvé.</CommandEmpty>
+
+                              <CommandGroup>
+                                <CommandItem
+                                  value="__none__"
+                                  onSelect={() => {
+                                    setTitreId("");
+                                    setTitrePickerOpen(false);
+                                  }}
+                                >
+                                  — Aucun —
+                                </CommandItem>
+                              </CommandGroup>
+
+                              {filteredTitresGrouped.map((group) => (
+                                <CommandGroup key={group.label} heading={group.label}>
+                                  {group.items.map((t) => (
+                                    <CommandItem
+                                      key={t.id}
+                                      value={`${t.valeur} ${group.label}`}
+                                      onSelect={() => {
+                                        setTitreId(t.id);
+                                        setTitrePickerOpen(false);
+                                      }}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="truncate">{t.valeur}</span>
+                                        <span className="text-xs text-[#6b5aa3] truncate">
+                                          {titreDescriptionById.get(t.id) ?? getTitreDescription(t)}
+                                        </span>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              ))}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      {selectedTitreDescription && (
+                        <p className="mt-1 text-xs text-[#6b5aa3]">{selectedTitreDescription}</p>
+                      )}
+                      <p className="mt-1 text-xs text-[#c5bfd9]">
+                        Exemple: choisir "Comte" + genre "Masculin" pour forcer un personnage "Comte Nom".
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Préfixe */}
             <div>
               <label className="text-sm text-[#2d1b4e]">Préfixe (optionnel)</label>
               <Input value={prefixe} onChange={(e) => setPrefixe(e.target.value)} placeholder="Ex: Ael / Nova / Val" />
@@ -692,8 +796,11 @@ export function GeneratePage() {
                       const title = (() => {
                         switch (generateWhat) {
                           case "npcs":
+                            return item.fullName ?? item.name ?? "Personnage";
                           case "nomPersonnages":
-                            return item.name ?? "Personnage";
+                            return item.name ?? item.displayName ?? "Personnage";
+                          case "nomFamille":
+                            return item.valeur?.trim() || (item.id ? `Famille #${item.id}` : "Famille");
                           case "lieux":
                             return item.value ?? "Lieu";
                           case "fragmentsHistoire":
@@ -702,6 +809,12 @@ export function GeneratePage() {
                             return item.valeur ?? "Titre";
                           case "concepts":
                             return item.valeur ?? "Concept";
+                          case "categories":
+                            return item.name ?? "Catégorie";
+                          case "cultures":
+                            return item.name ?? "Culture";
+                          case "universThematique":
+                            return item.name ?? "Univers";
                           default:
                             return "Résultat";
                         }
@@ -713,9 +826,11 @@ export function GeneratePage() {
                           case "npcs":
                             return item.backstory ? clamp(String(item.backstory), 220) : "Biographie générée pour votre univers.";
                           case "nomPersonnages":
-                            return item.miniBio
-                              ? clamp(String(item.miniBio), 360)
-                              : "Nom + mini-biographie (format court).";
+                            return "Prénom généré.";
+                          case "nomFamille":
+                            return item.cultureId 
+                              ? `Nom de famille lié à la culture #${item.cultureId}`
+                              : "Nom de famille disponible pour vos personnages.";
                           case "lieux":
                             return item.type ? `Type: ${item.type}` : "Lieu prêt à être intégré à votre monde.";
                           case "fragmentsHistoire":
@@ -730,6 +845,14 @@ export function GeneratePage() {
                               : item.mood
                                 ? `Ambiance: ${item.mood}`
                                 : "Un concept pour déclencher des idées.";
+                          case "categories":
+                            return item.universId 
+                              ? `Catégorie de l'univers #${item.universId}`
+                              : "Catégorie pour organiser vos éléments.";
+                          case "cultures":
+                            return "Culture pour contextualiser vos personnages et lieux.";
+                          case "universThematique":
+                            return "Univers thématique pour structurer votre monde.";
                           default:
                             return "";
                         }
@@ -752,7 +875,7 @@ export function GeneratePage() {
                                     {idx + 1}
                                   </span>
                                   <h4
-                                    className="text-xl text-[#2d1b4e] truncate"
+                                    className="text-xl text-[#2d1b4e] whitespace-normal break-words"
                                     style={{ fontFamily: "Cinzel, serif" }}
                                     title={title}
                                   >
@@ -769,16 +892,24 @@ export function GeneratePage() {
                             <div className="flex flex-wrap gap-2 mt-4">
                               <Badge className="bg-[#d4c5f9] text-[#2d1b4e] hover:bg-[#a67be8]">
                                 {generateWhat === "npcs"
-                                  ? "PNJ"
+                                  ? "Personnage"
                                   : generateWhat === "nomPersonnages"
-                                    ? "Personnage"
-                                    : generateWhat === "lieux"
-                                      ? "Lieu"
-                                      : generateWhat === "fragmentsHistoire"
-                                        ? "Fragment"
-                                        : generateWhat === "titres"
-                                          ? "Titre"
-                                          : "Concept"}
+                                    ? "Prénom"
+                                    : generateWhat === "nomFamille"
+                                      ? "Nom Famille"
+                                      : generateWhat === "lieux"
+                                        ? "Lieu"
+                                        : generateWhat === "fragmentsHistoire"
+                                          ? "Fragment"
+                                          : generateWhat === "titres"
+                                            ? "Titre"
+                                            : generateWhat === "concepts"
+                                              ? "Concept"
+                                              : generateWhat === "categories"
+                                                ? "Catégorie"
+                                                : generateWhat === "cultures"
+                                                  ? "Culture"
+                                                  : "Univers"}
                               </Badge>
                               {item.genre ? (
                                 <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200">Genre: {item.genre}</Badge>
