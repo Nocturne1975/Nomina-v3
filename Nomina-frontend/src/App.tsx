@@ -1,5 +1,4 @@
 import { Header } from "./components/Header";
-import { Hero } from "./components/Hero";
 import { Features } from "./components/Features";
 import { UseCases } from "./components/UseCases";
 import { ApiDemo } from "./components/ApiDemo";
@@ -17,7 +16,16 @@ import { FluidBackground } from "./components/FluidBackground";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { SsoCallbackPage } from "./pages/SsoCallbackPage";
 import { CulturesPage } from "./pages/CulturesPage";
+import { CategoriesPage } from "./pages/CategoriesPage";
+import { ConceptsPage } from "./pages/ConceptsPage";
+import { TitresPage } from "./pages/TitresPage";
+import { FragmentsHistoirePage } from "./pages/FragmentsHistoirePage";
+import { NomPersonnagesPage } from "./pages/NomPersonnagesPage";
+import { UniversPage } from "./pages/UniversPage";
+import { LieuxPage } from "./pages/LieuxPage";
+import { NomFamillesPage } from "./pages/NomFamillesPage";
 import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-react";
 import { setApiTokenProvider, apiFetch } from "./lib/api";
 
@@ -152,6 +160,7 @@ export default function App() {
       <main>      
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/homepage" element={<Navigate to="/" replace />} />
           <Route path="/features" element={<Features />} />
           <Route path="/usecases" element={<UseCases />} />
           <Route path="/demo" element={<ApiDemo />} />
@@ -159,11 +168,20 @@ export default function App() {
           <Route path="/docs" element={<Documentation />} />
           <Route path="/generate" element={<GeneratePage />} />
           <Route path="/dashboard" element={<RequireSignedIn><DashboardPage /></RequireSignedIn>} />
-          <Route path="/cultures" element={<RequireSignedIn><CulturesPage /></RequireSignedIn>} />
+          <Route path="/cultures" element={<RequireAdmin><CulturesPage /></RequireAdmin>} />
+          <Route path="/categories" element={<RequireAdmin><CategoriesPage /></RequireAdmin>} />
+          <Route path="/concepts" element={<RequireAdmin><ConceptsPage /></RequireAdmin>} />
+          <Route path="/titres" element={<RequireAdmin><TitresPage /></RequireAdmin>} />
+          <Route path="/fragments-histoire" element={<RequireAdmin><FragmentsHistoirePage /></RequireAdmin>} />
+          <Route path="/nom-personnages" element={<RequireAdmin><NomPersonnagesPage /></RequireAdmin>} />
+          <Route path="/univers" element={<RequireAdmin><UniversPage /></RequireAdmin>} />
+          <Route path="/lieux" element={<RequireAdmin><LieuxPage /></RequireAdmin>} />
+          <Route path="/nom-familles" element={<RequireAdmin><NomFamillesPage /></RequireAdmin>} />
           <Route path="/users" element={<RequireAdmin><UsersPage /></RequireAdmin>} />
           <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/sso-callback" element={<SsoCallbackPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>   
       </main>

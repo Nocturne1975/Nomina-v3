@@ -6,6 +6,7 @@ import { UseCases } from "../components/UseCases";
 import { ApiDemo } from "../components/ApiDemo";
 import { Pricing } from "../components/Pricing";
 import { Documentation } from "../components/Documentation";
+import { Link } from "react-router-dom";
 
 export function HomePage() {
 	return (
@@ -32,18 +33,18 @@ export function HomePage() {
 							</p>
 
 							<div className="mt-8 flex flex-wrap gap-3">
-								<a
-									href="#/generate"
+								<Link
+									to="/generate"
 									className="inline-flex items-center justify-center rounded-xl bg-[#7b3ff2] px-5 py-3 text-white hover:bg-[#a67be8] transition-colors"
 								>
 									Lancer une génération
-								</a>
-								<a
-									href="#/docs"
+								</Link>
+								<Link
+									to="/docs"
 									className="inline-flex items-center justify-center rounded-xl border border-[#7b3ff2]/50 bg-[#2d1b4e]/40 px-5 py-3 text-[#d4c5f9] hover:bg-[#2d1b4e]/70 hover:text-white transition-colors"
 								>
 									Lire la documentation
-								</a>
+								</Link>
 							</div>
 						</div>
 
@@ -73,9 +74,9 @@ export function HomePage() {
 										</div>
 									</div>
 									<div className="rounded-xl bg-[#1a0f33]/40 border border-[#7b3ff2]/15 p-4">
-										<div className="text-white font-medium">Mode Desktop</div>
+										<div className="text-white font-medium">Mode hors‑ligne</div>
 										<div className="text-sm text-[#c5bfd9] mt-1">
-											Une expérience hors‑ligne pour générer même sans serveur.
+											En cas de coupure réseau, certaines actions peuvent être mises en attente (outbox).
 										</div>
 									</div>
 								</div>

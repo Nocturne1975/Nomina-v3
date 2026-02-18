@@ -1,4 +1,5 @@
 import { Twitter, Github, Linkedin } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import logoUrl from "../../assets/logo5.png";
 
@@ -10,7 +11,7 @@ export function Footer() {
           {/* Brand */}
           <div>
             <a
-              href="#/"
+              href="/"
               className="inline-flex items-center gap-3 mb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b4f0]/60 rounded-lg"
               aria-label="Aller à l’accueil"
             >
@@ -31,19 +32,19 @@ export function Footer() {
             <h4 className="text-white mb-4">Produit</h4>
             <ul className="space-y-2">
               <li>
-                <a href="#/features" className="text-sm text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+                <Link to="/features" className="text-sm text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                   Fonctionnalités
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#/pricing" className="text-sm text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+                <Link to="/pricing" className="text-sm text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                   Tarifs
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#/docs" className="text-sm text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+                <Link to="/docs" className="text-sm text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                   Documentation
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#/changelog" className="text-sm text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">

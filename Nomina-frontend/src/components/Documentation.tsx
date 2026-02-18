@@ -41,7 +41,7 @@ export function Documentation() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const codeSnippets = useMemo(() => {
-    const js = `// Exemple (Desktop / Web)\n// Note: en mode offline, l’app utilise l’API locale Electron.\n\nconst baseUrl = 'http://localhost:3001';\n\nasync function generateNomPersonnages() {\n  const res = await fetch(baseUrl + '/generate/nom-personnages?count=3');\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const data = await res.json();\n\n  // data: Array<{ nom: string; miniBio: string }>\n  console.log(data);\n}\n\ngenerateNomPersonnages();\n`;
+    const js = `// Exemple (Web)\n// Astuce: configure VITE_API_BASE_URL si besoin (ex: http://localhost:3000).\n\nconst baseUrl = 'http://localhost:3000';\n\nasync function generateNomPersonnages() {\n  const res = await fetch(baseUrl + '/generate/nom-personnages?count=3');\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const data = await res.json();\n\n  // data: Array<{ nom: string; miniBio: string }>\n  console.log(data);\n}\n\ngenerateNomPersonnages();\n`;
 
     const python = `# Exemple (Python)\nimport requests\n\nbase_url = 'http://localhost:3001'\n\nr = requests.get(f"{base_url}/generate/nom-personnages", params={"count": 3})\nr.raise_for_status()\n\nfor item in r.json():\n    print(item["nom"])\n    print(item["miniBio"])\n    print('---')\n`;
 
@@ -96,17 +96,17 @@ export function Documentation() {
             </h3>
             <div className="text-sm text-[#2d1b4e] space-y-3">
               <p>
-                Objectif : lancer Nomina Desktop et pouvoir générer des contenus (personnages, univers, etc.)
-                que vous soyez connecté ou non.
+                Objectif : lancer Nomina (web) et pouvoir générer des contenus (personnages, univers, etc.).
+                Pour les fonctionnalités qui appellent l’API, démarrez aussi le backend.
               </p>
               <ul className="list-disc pl-5 space-y-1">
                 <li><b>Mode en ligne</b> : l’app appelle l’API du backend (Express + Prisma).</li>
-                <li><b>Mode hors‑ligne</b> : l’app passe par l’API locale Electron (réponses synthétiques).</li>
+                <li><b>Mode hors‑ligne</b> : les écritures peuvent être mises en attente (outbox) et rejouées au retour en ligne; la lecture dépend du cache.</li>
                 <li><b>Génération</b> : allez sur la page “Génération”, choisissez un type, puis générez.</li>
               </ul>
               <p className="text-[#6b5b8a]">
-                Astuce : si vous voyez des erreurs réseau, essayez d’abord le mode hors‑ligne pour valider l’UI,
-                puis relancez le backend pour le mode en ligne.
+                Astuce : si vous voyez des erreurs réseau, vérifiez que le backend tourne et que <code>VITE_API_BASE_URL</code>
+                pointe vers la bonne URL.
               </p>
             </div>
           </Card>
@@ -193,17 +193,19 @@ export function Documentation() {
             </h3>
             <div className="text-sm text-[#2d1b4e] space-y-3">
               <p>
-                Pour ce projet, il n’y a pas encore de SDK “officiel” publié (npm/pip).
-                L’intégration se fait via des appels HTTP (fetch/axios côté JS, requests côté Python).
+                Pour ce projet, il n’y a pas de SDK “officiel” publié (npm/pip).
+                La raison est simple: l’API est un backend interne de projet (endpoints susceptibles d’évoluer),
+                et publier un SDK implique du versioning, de la doc, des tests et une distribution.
+                L’intégration se fait donc via des appels HTTP (fetch/axios côté JS, requests côté Python).
               </p>
               <ul className="list-disc pl-5 space-y-1">
-                <li><b>Web/React</b> : créez un petit service <code>apiClient.ts</code> qui wrappe <code>fetch</code>.</li>
-                <li><b>Desktop</b> : en offline, l’app passe par l’API locale Electron.</li>
+                <li><b>Web/React</b> : utilisez le helper déjà présent (<code>apiFetch</code>) pour centraliser base URL + token.</li>
+                <li><b>Hors‑ligne</b> : les requêtes d’écriture peuvent être mises en attente (outbox) et rejouées au retour en ligne.</li>
                 <li><b>Backend-to-backend</b> : même principe, juste une base URL différente.</li>
               </ul>
               <p className="text-[#6b5b8a]">
-                Si tu veux, je peux aussi te générer un mini “SDK” interne (un fichier TypeScript) qui centralise
-                tous les endpoints utilisés par l’UI.
+                Si vous voulez aller plus loin, on peut générer un “SDK” interne (TypeScript) ou un client à partir
+                d’un contrat (ex: OpenAPI) — mais ce n’est pas nécessaire pour le cours.
               </p>
             </div>
           </Card>
@@ -218,11 +220,11 @@ export function Documentation() {
                   <b>Générer un personnage</b> : Page “Génération” → “Noms de personnages” → générer → copier/adapter.
                 </li>
                 <li>
-                  <b>Travailler hors‑ligne</b> : lancer seulement l’app Desktop (sans backend) et utiliser les routes
-                  locales de génération.
+                  <b>Travailler hors‑ligne</b> : si la connexion tombe, l’app peut mettre en file les actions d’écriture
+                  (outbox). Les pages qui lisent des données via l’API nécessitent tout de même un backend accessible.
                 </li>
                 <li>
-                  <b>Passer en ligne</b> : démarrer le backend, puis régénérer pour obtenir des données persistables.
+                  <b>Passer en ligne</b> : dès que le backend est accessible, l’outbox se resynchronise automatiquement.
                 </li>
               </ul>
               <p className="text-[#6b5b8a]">

@@ -1,30 +1,51 @@
 import { Button } from "./ui/button";
-import { Menu, X } from "lucide-react";
-import { useState } from "react";
-import { SignIn, SignUp, SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
+import { LogOut, Menu, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { SignedIn, SignedOut, UserButton, useAuth, useClerk, useUser } from "@clerk/clerk-react";
+import { Link } from "react-router-dom";
+
+import { apiFetch } from "../lib/api";
 
 import logoUrl from "../../assets/logo5.png";
 
 export function Header() {
   const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+  const { isSignedIn, getToken } = useAuth();
+  const { signOut } = useClerk();
+  const { user } = useUser();
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!clerkEnabled || !isSignedIn) {
+      setIsAdmin(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const token = await getToken();
+        const data = await apiFetch<{ isAdmin: boolean }>("/auth/me", { token, cacheTtlMs: 0 });
+        if (!cancelled) setIsAdmin(Boolean(data.isAdmin));
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clerkEnabled, getToken, isSignedIn]);
 
   return (
     <header className="sticky top-0 z-50 bg-[#2d1b4e] border-b border-[#7b3ff2]/20">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <a
-            href="#/"
+          <Link
+            to="/"
             className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b4f0]/60 rounded-lg"
             aria-label="Aller à l’accueil"
           >
@@ -34,35 +55,37 @@ export function Header() {
             <span className="text-2xl text-white" style={{ fontFamily: 'Cinzel, serif' }}>
               Nomina
             </span>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#/features" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+            <Link to="/features" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
               Fonctionnalités
-            </a>
-            <a href="#/usecases" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+            </Link>
+            <Link to="/usecases" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
               Cas d'usage
-            </a>
-            <a href="#/pricing" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+            </Link>
+            <Link to="/pricing" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
               Tarifs
-            </a>
+            </Link>
             {clerkEnabled ? (
               <SignedIn>
-                <a href="#/dashboard" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+                <Link to="/dashboard" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                   Dashboard
-                </a>
-                <a href="#/cultures" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
-                  Cultures
-                </a>
+                </Link>
+                {isAdmin ? (
+                  <Link to="/cultures" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+                    Cultures
+                  </Link>
+                ) : null}
               </SignedIn>
             ) : null}
-            <a href="#/generate" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+            <Link to="/generate" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
               Génération
-            </a>
-            <a href="#/docs" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+            </Link>
+            <Link to="/docs" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
               Documentation
-            </a>
+            </Link>
           </nav>
 
           {/* CTA Buttons */}
@@ -70,35 +93,40 @@ export function Header() {
             {clerkEnabled ? (
               <>
                 <SignedOut>
-                  <Button
-                    variant="ghost"
-                    className="text-[#d4c5f9] hover:text-white hover:bg-[#7b3ff2]/20"
-                    onClick={() => {
-                      setAuthMode('signin');
-                      setAuthOpen(true);
-                    }}
-                  >
-                    Connexion
+                  <Button asChild variant="ghost" className="text-[#d4c5f9] hover:text-white hover:bg-[#7b3ff2]/20">
+                    <Link to="/login">Connexion</Link>
                   </Button>
-                  <Button
-                    className="bg-[#7b3ff2] hover:bg-[#a67be8] text-white"
-                    onClick={() => {
-                      setAuthMode('signup');
-                      setAuthOpen(true);
-                    }}
-                  >
-                    Commencer
+                  <Button asChild className="bg-[#7b3ff2] hover:bg-[#a67be8] text-white">
+                    <Link to="/register">Commencer</Link>
                   </Button>
                 </SignedOut>
                 <SignedIn>
+                  <div className="flex items-center gap-3">
+                    <div className="hidden lg:flex flex-col items-end leading-tight">
+                      <span className="text-xs text-[#d4c5f9] opacity-80">Connecté</span>
+                      <span className="text-sm text-white">
+                        {user?.firstName || user?.primaryEmailAddress?.emailAddress || "Compte"}
+                        {isAdmin ? <span className="ml-2 text-xs text-[#e8b4f0]">Admin</span> : null}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      className="text-[#d4c5f9] hover:text-white hover:bg-[#7b3ff2]/20 px-2"
+                      onClick={() => signOut({ redirectUrl: "/" })}
+                      aria-label="Se déconnecter"
+                      title="Se déconnecter"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </Button>
                   <UserButton
-                    afterSignOutUrl="#/"
+                    afterSignOutUrl="/"
                     appearance={{
                       elements: {
                         avatarBox: "w-9 h-9",
                       },
                     }}
                   />
+                  </div>
                 </SignedIn>
               </>
             ) : (
@@ -121,59 +149,67 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-[#7b3ff2]/20">
             <nav className="flex flex-col gap-4">
-              <a href="#/features" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+              <Link to="/features" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                 Fonctionnalités
-              </a>
-              <a href="#/usecases" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+              </Link>
+              <Link to="/usecases" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                 Cas d'usage
-              </a>
-              <a href="#/pricing" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+              </Link>
+              <Link to="/pricing" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                 Tarifs
-              </a>
+              </Link>
               {clerkEnabled ? (
                 <SignedIn>
-                  <a href="#/dashboard" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+                  <Link to="/dashboard" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                     Dashboard
-                  </a>
-                  <a href="#/cultures" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
-                    Cultures
-                  </a>
+                  </Link>
+                  {isAdmin ? (
+                    <Link to="/cultures" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+                      Cultures
+                    </Link>
+                  ) : null}
                 </SignedIn>
               ) : null}
-              <a href="#/generate" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+              <Link to="/generate" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                 Génération
-              </a>
-              <a href="#/docs" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
+              </Link>
+              <Link to="/docs" className="text-[#d4c5f9] hover:text-[#e8b4f0] transition-colors">
                 Documentation
-              </a>
+              </Link>
               <div className="flex flex-col gap-2 pt-2">
                 {clerkEnabled ? (
                   <>
                     <SignedOut>
-                      <Button
-                        variant="outline"
-                        className="border-[#7b3ff2] text-[#d4c5f9]"
-                        onClick={() => {
-                          setAuthMode('signin');
-                          setAuthOpen(true);
-                        }}
-                      >
-                        Connexion
+                      <Button asChild variant="outline" className="border-[#7b3ff2] text-[#d4c5f9]">
+                        <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                          Connexion
+                        </Link>
                       </Button>
-                      <Button
-                        className="bg-[#7b3ff2] hover:bg-[#a67be8] text-white"
-                        onClick={() => {
-                          setAuthMode('signup');
-                          setAuthOpen(true);
-                        }}
-                      >
-                        Commencer
+                      <Button asChild className="bg-[#7b3ff2] hover:bg-[#a67be8] text-white">
+                        <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
+                          Commencer
+                        </Link>
                       </Button>
                     </SignedOut>
                     <SignedIn>
-                      <div className="flex justify-center py-2">
+                      <div className="flex flex-col items-center gap-2 py-2">
+                        <div className="text-center">
+                          <div className="text-xs text-[#d4c5f9] opacity-80">Connecté</div>
+                          <div className="text-sm text-white">
+                            {user?.firstName || user?.primaryEmailAddress?.emailAddress || "Compte"}
+                            {isAdmin ? <span className="ml-2 text-xs text-[#e8b4f0]">Admin</span> : null}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="border-[#7b3ff2] text-[#d4c5f9]"
+                          onClick={() => signOut({ redirectUrl: "/" })}
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Se déconnecter
+                        </Button>
                         <UserButton
-                          afterSignOutUrl="#/"
+                          afterSignOutUrl="/"
                           appearance={{
                             elements: {
                               avatarBox: "w-9 h-9",
@@ -194,24 +230,7 @@ export function Header() {
         )}
       </div>
 
-      {clerkEnabled ? (
-        <Dialog open={authOpen} onOpenChange={setAuthOpen}>
-          <DialogContent className="max-w-[460px] bg-[#1a0f33] border-[#7b3ff2]/30">
-            <DialogHeader>
-              <DialogTitle className="text-white">
-                {authMode === 'signin' ? 'Connexion' : 'Créer un compte'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="mt-2">
-              {authMode === 'signin' ? (
-                <SignIn routing="hash" afterSignInUrl="#/dashboard" />
-              ) : (
-                <SignUp routing="hash" afterSignUpUrl="#/dashboard" />
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      ) : null}
+      {null}
     </header>
   );
 }

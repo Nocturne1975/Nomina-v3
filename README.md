@@ -75,4 +75,5 @@ Ajoute au moins **3 captures** montrant :
 
 ## Dépôts
 
-- Monorepo : (à remplir) https://github.com/<user>/<repo>
+- Monorepo : (à remplir) https://github.com/Nocturne1975/Nomina-backend.git
+                         https://github.com/Nocturne1975/Nomina-frontend.git
