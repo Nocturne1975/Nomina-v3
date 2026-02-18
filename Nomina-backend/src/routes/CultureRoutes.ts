@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAdmin, requireAuth } from "../middleware/auth.middleware";
 import {
   getCultures,
   getCultureById,
@@ -13,8 +14,9 @@ const router = Router();
 router.get("/total", totalCulture);
 router.get("/", getCultures);
 router.get("/:id", getCultureById);
-router.post("/", createCulture);
-router.put("/:id", updateCulture);
-router.delete("/:id", deleteCulture);
+// CRUD admin: écritures protégées
+router.post("/", requireAuth, requireAdmin, createCulture);
+router.put("/:id", requireAuth, requireAdmin, updateCulture);
+router.delete("/:id", requireAuth, requireAdmin, deleteCulture);
 
 export default router;

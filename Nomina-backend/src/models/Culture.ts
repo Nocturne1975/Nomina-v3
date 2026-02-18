@@ -1,6 +1,7 @@
-import { NomPersonnage } from "./NomPersonnage";
+import { Prenom } from "./NomPersonnage";
 import { FragmentsHistoire } from "./FragmentsHistoire";
 import { Titre } from "./Titre";
+import { Personnage } from "./Personnage";
 
 export interface Culture {
   id: number;
@@ -8,7 +9,8 @@ export interface Culture {
   description?: string;
   createdAt: Date;
   updatedAt: Date;
-  nomPersonnages?: NomPersonnage[];
+  nomPersonnages?: Prenom[];
+  personnages?: Personnage[];
   fragmentsHistoire?: FragmentsHistoire[];
   titres?: Titre[];
 }

@@ -1,12 +1,12 @@
 import prisma from "../utils/prisma";
 
 async function main() {
-  const total = await prisma.nomPersonnage.count();
-  const missing = await prisma.nomPersonnage.count({
+  const total = await prisma.prenom.count();
+  const missing = await prisma.prenom.count({
     where: { OR: [{ genre: null }, { genre: "" }] },
   });
 
-  const distinct = await prisma.nomPersonnage.findMany({
+  const distinct = await prisma.prenom.findMany({
     distinct: ["genre"],
     select: { genre: true },
   });

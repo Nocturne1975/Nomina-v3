@@ -7,7 +7,7 @@ function hasFlag(flag: string) {
 async function main() {
   const apply = hasFlag("--apply");
 
-  const rows = await prisma.nomPersonnage.findMany({
+  const rows = await prisma.prenom.findMany({
     where: { OR: [{ genre: null }, { genre: "" }] },
     select: { id: true, valeur: true, genre: true, cultureId: true, categorieId: true },
     orderBy: { id: "asc" },
@@ -30,7 +30,7 @@ async function main() {
     return;
   }
 
-  const result = await prisma.nomPersonnage.deleteMany({
+  const result = await prisma.prenom.deleteMany({
     where: { OR: [{ genre: null }, { genre: "" }] },
   });
 

@@ -47,7 +47,20 @@ export const updateCulture  = async (req: Request, res: Response) => {
 // DELETE - supprimer une culture
 export const deleteCulture = async (req: Request, res: Response) => {
   try {
-    await prisma.culture.delete({ where: { id: Number(req.params.id) } });
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: 'Id invalide' });
+
+    const exists = await prisma.culture.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) return res.status(404).json({ error: 'Culture non trouvée' });
+
+    await prisma.$transaction([
+      prisma.prenom.updateMany({ where: { cultureId: id }, data: { cultureId: null } }),
+      prisma.fragmentsHistoire.updateMany({ where: { cultureId: id }, data: { cultureId: null } }),
+      prisma.titre.updateMany({ where: { cultureId: id }, data: { cultureId: null } }),
+      prisma.nomFamille.updateMany({ where: { cultureId: id }, data: { cultureId: null } }),
+      prisma.culture.delete({ where: { id } }),
+    ]);
+
     res.status(204).end();
   } catch (error) {
     res.status(500).json({ error: 'Erreur serveur' });

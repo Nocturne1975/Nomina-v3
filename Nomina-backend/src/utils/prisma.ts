@@ -1,9 +1,10 @@
 import { PrismaNeon } from '@prisma/adapter-neon'
 import { PrismaClient } from '../generated/prisma/client'
-import path from "path";
 import dotenv from "dotenv";
 
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+// Charge d'abord Nomina-backend/.env (si présent), puis tente la racine du repo en fallback.
+dotenv.config();
+dotenv.config({ path: "../.env" });
 
 const adapter = new PrismaNeon({
   connectionString: process.env.DATABASE_URL,

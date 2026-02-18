@@ -3,6 +3,7 @@ export type ConceptSeed = {
   type?: string | null;
   mood?: string | null;
   keywords?: string | null;
+  categorieId?: number | null;
 };
 
 export const concepts: ConceptSeed[] = [
@@ -126,5 +127,27 @@ export const concepts: ConceptSeed[] = [
   { valeur: "Falaises‑Cités", type: "hybrid", mood: "vertigineux", keywords: "architecture,hauteur,clan,isolement" },
   { valeur: "Écologie Totale", type: "branding", mood: "utopique", keywords: "nature,technologie,équilibre,avenir" },
   { valeur: "Reliques‑Clés", type: "feature", mood: "aventure", keywords: "artefact,ouverture,quête,verrou" },
+
+  // Nouveaux concepts - Février 2026
+  { valeur: "Brumes d'Azur", type: "hybrid", mood: "melancholic", keywords: "brume,ciel,bleu,douceur,onirique", categorieId: 1 },
+  { valeur: "Cendres de Lune", type: "hybrid", mood: "dark", keywords: "nuit,lune,cendre,mystère,froid", categorieId: 1 },
+  { valeur: "Éclats d'Aurore", type: "hybrid", mood: "hopeful", keywords: "lumière,matin,renouveau,chaleur,espoir", categorieId: 1 },
+  { valeur: "Silences de Verre", type: "hybrid", mood: "melancholic", keywords: "fragilité,silence,transparence,solitude", categorieId: 2 },
+  { valeur: "Routes d'Éther", type: "hybrid", mood: "mystic", keywords: "voyage,ciel,éther,dimension,inconnu", categorieId: 2 },
+  { valeur: "Noces de Poussière", type: "hybrid", mood: "tragic", keywords: "fin,désert,ruine,union,drame", categorieId: 3 },
+  { valeur: "Miroirs de Nébuleuse", type: "hybrid", mood: "cosmic", keywords: "espace,nébuleuse,reflet,infini,étoile", categorieId: 3 },
+  { valeur: "Chants de Fer", type: "hybrid", mood: "epic", keywords: "guerre,métal,armée,puissance,bataille", categorieId: 4 },
+  { valeur: "Rivières d'Obsidienne", type: "hybrid", mood: "dark", keywords: "roche,noir,lave,profondeur,tranchant", categorieId: 4 },
+  { valeur: "Jardins de Braise", type: "hybrid", mood: "apocalyptic", keywords: "feu,fin du monde,nature,cendre", categorieId: 5 },
+  { valeur: "Couronnes d'Écume", type: "hybrid", mood: "serene", keywords: "mer,vague,blanc,horizon,calme", categorieId: 5 },
+  { valeur: "Vestiges d'Orage", type: "hybrid", mood: "dramatic", keywords: "tempête,ruine,ciel,tonnerre,tension", categorieId: 6 },
+  { valeur: "Fables de Poussière d'Étoiles", type: "hybrid", mood: "wonder", keywords: "conte,cosmos,enfant,magie,étoile", categorieId: 6 },
+  { valeur: "Marées de Cendre Blanche", type: "hybrid", mood: "surreal", keywords: "plage,cendre,blanc,bizarre,rêve", categorieId: 7 },
+  { valeur: "Serments d'Acier", type: "branding", mood: "epic", keywords: "engagement,force,métal,loyauté", categorieId: 7 },
+  { valeur: "Ombres d'Origami", type: "hybrid", mood: "mystic", keywords: "papier,pliage,ombre,secret,forme", categorieId: 8 },
+  { valeur: "Atlas des Rêves Brisés", type: "hybrid", mood: "melancholic", keywords: "carte,rêve,échec,nostalgie,voyage", categorieId: 8 },
+  { valeur: "Fulgurances de Minuit", type: "hybrid", mood: "intense", keywords: "nuit,éclair,idée,soudain,ville", categorieId: 9 },
+  { valeur: "Citadelles de Brume", type: "hybrid", mood: "mystic", keywords: "forteresse,brume,haut,secret,antique", categorieId: 9 },
+  { valeur: "Clés du Néant", type: "hybrid", mood: "dark", keywords: "vide,porte,mystère,fin,abîme", categorieId: 10 },
 
 ];

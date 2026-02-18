@@ -1,7 +1,7 @@
 import { Culture } from "./Culture";
 import { Categorie } from "./Categorie";
 
-export interface NomPersonnage {
+export interface Prenom {
   id: number;
   valeur?: string;
   genre?: string;
@@ -12,3 +12,5 @@ export interface NomPersonnage {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type NomPersonnage = Prenom;

@@ -55,6 +55,7 @@ export async function importConcepts(options: ImportConceptsOptions = {}) {
         type: c.type ?? null,
         mood: c.mood ?? null,
         keywords: c.keywords ?? null,
+        categorieId: c.categorieId ?? null,
       },
     });
     inserted++;

@@ -38,7 +38,7 @@ async function main() {
     throw new Error(`Invalid --unknown. Use keep|nb|null (got: ${unknown})`);
   }
 
-  const rows = await prisma.nomPersonnage.findMany({
+  const rows = await prisma.prenom.findMany({
     select: { id: true, valeur: true, genre: true },
     orderBy: { id: "asc" },
   });
@@ -95,7 +95,7 @@ async function main() {
     const batch = updates.slice(i, i + batchSize);
     await prisma.$transaction(
       batch.map((u) =>
-        prisma.nomPersonnage.update({
+        prisma.prenom.update({
           where: { id: u.id },
           data: { genre: u.to },
         })

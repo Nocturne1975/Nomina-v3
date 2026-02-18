@@ -42,12 +42,13 @@ model Categorie {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
-  nomPersonnages    NomPersonnage[] // opposite relation field
+  nomPersonnages    Prenom[] // opposite relation field
   lieux             Lieux[]
   fragmentsHistoire FragmentsHistoire[] // opposite relation field
   titres            Titre[] // opposite relation field
   concepts          Concept[] // opposite relation field
   nomFamilles       NomFamille[] // opposite relation field
+  personnages       Personnage[]
 }
 
 model Culture {
@@ -57,10 +58,11 @@ model Culture {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  nomPersonnages    NomPersonnage[] // opposite relation field
+  nomPersonnages    Prenom[] // opposite relation field
   fragmentsHistoire FragmentsHistoire[] // opposite relation field
   titres            Titre[] // opposite relation field
   nomFamilles       NomFamille[] // opposite relation field
+  personnages       Personnage[]
 }
 
 model NomFamille {
@@ -73,10 +75,11 @@ model NomFamille {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime?  @updatedAt
 
-  personnages NomPersonnage[] // relation inverse
+  personnages      Prenom[] // relation inverse
+  personnagesReels Personnage[]
 }
 
-model NomPersonnage {
+model Prenom {
   id           Int         @id @default(autoincrement())
   valeur       String?
   genre        String?
@@ -86,8 +89,11 @@ model NomPersonnage {
   categorie    Categorie?  @relation(fields: [categorieId], references: [id])
   nomFamilleId Int?
   nomFamille   NomFamille? @relation(fields: [nomFamilleId], references: [id])
+  personnages  Personnage[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime?   @updatedAt
+
+  @@map("NomPersonnage")
 }
 
 model Lieux {
@@ -124,8 +130,27 @@ model Titre {
   culture     Culture?   @relation(fields: [cultureId], references: [id])
   categorieId Int?
   categorie   Categorie? @relation(fields: [categorieId], references: [id])
+  personnages Personnage[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+model Personnage {
+  id           Int        @id @default(autoincrement())
+  prenomId     Int
+  prenom       Prenom     @relation(fields: [prenomId], references: [id])
+  nomFamilleId Int?
+  nomFamille   NomFamille? @relation(fields: [nomFamilleId], references: [id])
+  titreId      Int?
+  titre        Titre?     @relation(fields: [titreId], references: [id])
+  genre        String?
+  biographie   String?
+  cultureId    Int?
+  culture      Culture?   @relation(fields: [cultureId], references: [id])
+  categorieId  Int?
+  categorie    Categorie? @relation(fields: [categorieId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Concept {
