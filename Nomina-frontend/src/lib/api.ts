@@ -5,7 +5,7 @@ export type ApiErrorPayload = {
 };
 
 export const getApiBaseUrl = (): string => {
-  const raw = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  const raw = import.meta.env.VITE_API_URL as string | undefined;
   return (raw && raw.trim().length > 0 ? raw.trim() : 'http://localhost:3000').replace(/\/$/, '');
 };
 

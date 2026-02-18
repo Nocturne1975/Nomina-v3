@@ -31,7 +31,7 @@ npm run dev
 Créer un fichier `.env.local` à la racine de `Nomina-frontend` :
 
 - `VITE_CLERK_PUBLISHABLE_KEY=pk_test_...`
-- `VITE_API_BASE_URL=http://localhost:3000`
+- `VITE_API_URL=http://localhost:3000`
 
 ### Build
 
