@@ -47,9 +47,6 @@ const corsOptions: CorsOptions = {
 // CORS pour toutes les requêtes
 app.use(cors(corsOptions));
 
-// Preflight
-app.options("/(.*)", cors(corsOptions));
-
 app.get("/", (_req, res) => res.send("Nomina-backend running"));
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
