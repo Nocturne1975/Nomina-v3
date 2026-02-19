@@ -1,6 +1,5 @@
-
 import express from "express";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import dotenv from "dotenv";
 
 // Important!! en dev (ts-node): assure que l'augmentation Express (req.auth) est chargée.
@@ -25,31 +24,31 @@ const app = express();
 
 app.use(express.json());
 
-const corsOrigins = (
-  process.env.CORS_ORIGIN ||
-  process.env.CORS_ORIGINS ||
-  "http://localhost:5173"
-)
-  .split(",")
-  .map((o) => o.trim())
-  .filter(Boolean);
+const corsOrigins = [
+  "https://nomina-v3.vercel.app",
+  "http://localhost:5173", // dev Vite
+  "http://localhost:3000", // tests locaux
+];
 
-app.use(
-  cors({
-    origin(
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void
-    ) {
-      // Certains contextes (Electron/file://) n'envoient pas d'en-tête Origin.
-      if (!origin) return callback(null, true);
-      if (corsOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error(`CORS: origin non autorisée: ${origin}`));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    // Certains contextes (Electron/file://) n'envoient pas d'en-tête Origin.
+    if (!origin) return callback(null, true);
+
+    if (corsOrigins.includes(origin)) return callback(null, true);
+
+    return callback(new Error(`CORS: origin non autorisée: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// CORS pour toutes les requêtes
+app.use(cors(corsOptions));
+
+// Preflight
+app.options("*", cors(corsOptions));
 
 app.get("/", (_req, res) => res.send("Nomina-backend running"));
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
@@ -69,4 +68,3 @@ app.use("/lieux", LieuxRoutes);
 app.use("/univers", UniversThematiqueRoutes);
 
 export default app;
-
