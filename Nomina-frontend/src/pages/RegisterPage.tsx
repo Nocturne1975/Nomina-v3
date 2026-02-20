@@ -14,6 +14,8 @@ export function RegisterPage() {
 	const [step, setStep] = useState<"form" | "verify-email">("form");
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [info, setInfo] = useState<string | null>(null);
+	const [resendCooldown, setResendCooldown] = useState(0);
 
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
@@ -39,6 +41,24 @@ export function RegisterPage() {
 		if (isSignedIn) navigate("/dashboard", { replace: true });
 	}, [clerkEnabled, isSignedIn, navigate]);
 
+	useEffect(() => {
+		if (resendCooldown <= 0) return;
+		const timer = setInterval(() => {
+			setResendCooldown((s) => (s > 0 ? s - 1 : 0));
+		}, 1000);
+		return () => clearInterval(timer);
+	}, [resendCooldown]);
+
+	function getClerkErrorMessage(e: any, fallback: string): string {
+		const details = e?.errors?.[0];
+		const base = details?.longMessage || details?.message || e?.message || fallback;
+		const retryAfter = details?.meta?.retryAfterSeconds ?? details?.meta?.retry_after_seconds;
+		if (typeof retryAfter === "number" && retryAfter > 0) {
+			return `${base} Réessaie dans ${retryAfter}s.`;
+		}
+		return String(base);
+	}
+
 	async function handleSubmit() {
 		if (!clerkEnabled) return;
 		if (isSignedIn) return;
@@ -46,6 +66,7 @@ export function RegisterPage() {
 		if (!signUp) return;
 
 		setError(null);
+		setInfo(null);
 		setPending(true);
 		try {
 			if (step === "form") {
@@ -66,6 +87,7 @@ export function RegisterPage() {
 				try {
 					await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
 					setStep("verify-email");
+					setInfo("Un code de vérification a été envoyé par courriel.");
 					return;
 				} catch {
 					// Si aucune vérification n'est requise, Clerk peut être déjà "complete".
@@ -89,7 +111,9 @@ export function RegisterPage() {
 				return;
 			}
 
-			setError("Code invalide ou expiré. Réessaie.");
+			setError(
+				`Vérification incomplète (statut: ${attempt.status}). Clique sur “Renvoyer le code” puis réessaie avec le dernier code reçu.`
+			);
 		} catch (e: any) {
 			const msg =
 				e?.errors?.[0]?.longMessage ||
@@ -97,6 +121,44 @@ export function RegisterPage() {
 				e?.message ||
 				"Impossible de créer le compte.";
 			setError(String(msg));
+		} finally {
+			setPending(false);
+		}
+	}
+
+	async function resendEmailCode() {
+		if (!clerkEnabled) return;
+		if (!isLoaded) return;
+		if (!signUp) return;
+		if (resendCooldown > 0) return;
+
+		setError(null);
+		setInfo(null);
+		setPending(true);
+		try {
+			if (!signUp.emailAddress) {
+				await signUp.create({
+					emailAddress: email.trim(),
+					password,
+					firstName: firstName.trim(),
+					lastName: lastName.trim(),
+					...(phone.trim()
+						? {
+							phoneNumber: phone.trim(),
+						}
+						: {}),
+				});
+			}
+
+			await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+			setInfo("Nouveau code envoyé. Utilise le plus récent dans ta boîte courriel.");
+			setResendCooldown(30);
+		} catch (e: any) {
+			const retryAfter = e?.errors?.[0]?.meta?.retryAfterSeconds ?? e?.errors?.[0]?.meta?.retry_after_seconds;
+			if (typeof retryAfter === "number" && retryAfter > 0) {
+				setResendCooldown(retryAfter);
+			}
+			setError(getClerkErrorMessage(e, "Impossible de renvoyer le code."));
 		} finally {
 			setPending(false);
 		}
@@ -117,6 +179,7 @@ export function RegisterPage() {
 					{clerkEnabled ? (
 						<div className="space-y-4">
 							{error ? <p className="text-sm text-red-600">{error}</p> : null}
+							{info ? <p className="text-sm text-emerald-700">{info}</p> : null}
 
 							{step === "form" ? (
 								<>
@@ -153,6 +216,14 @@ export function RegisterPage() {
 									<label className="text-sm opacity-80">Code reçu par courriel</label>
 									<Input value={emailCode} onChange={(e) => setEmailCode(e.target.value)} inputMode="numeric" />
 									<p className="text-xs opacity-70 mt-1">Vérifie ta boîte courriel (et le spam).</p>
+									<Button
+										variant="outline"
+										className="mt-3"
+										onClick={() => resendEmailCode().catch(() => undefined)}
+										disabled={pending || resendCooldown > 0}
+									>
+										{resendCooldown > 0 ? `Renvoyer le code (${resendCooldown}s)` : "Renvoyer le code"}
+									</Button>
 								</div>
 							)}
 
