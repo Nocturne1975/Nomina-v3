@@ -50,14 +50,15 @@ Frontend : `http://localhost:5173`
 
 - `DATABASE_URL` : connexion Prisma
 - `CLERK_SECRET_KEY` : clé serveur Clerk
-- `ADMIN_CLERK_USER_ID` : userId Clerk de l’admin
-- `CORS_ORIGIN` : origin(s) autorisées, ex. `http://localhost:5173`
+- `ADMIN_CLERK_USER_IDS` (ou `ADMIN_CLERK_USER_ID`) : userId Clerk admin (CSV possible)
+- `CORS_ORIGINS` : origins autorisées, ex. `http://localhost:5173,https://nomina-v3.vercel.app`
+- `FRONTEND_URL` : origin principale du frontend (optionnel)
 - `PORT` : port du backend
 
 ### Frontend (Nomina-frontend/.env.local)
 
 - `VITE_CLERK_PUBLISHABLE_KEY` : clé publique Clerk
-- `VITE_API_BASE_URL` : URL du backend (ex. `http://localhost:3000`)
+- `VITE_API_URL` : URL du backend (ex. `http://localhost:3000`)
 
 ## Captures d’écran (à inclure pour la remise)
 
@@ -70,10 +71,8 @@ Ajoute au moins **3 captures** montrant :
 
 ## Auteurs
 
-- Nom : ____________________
-- Matricule : ______________
+- Projet académique — section à compléter par l’équipe de remise (nom et matricule).
 
-## Dépôts
+## Dépôt
 
-- Monorepo : (à remplir) https://github.com/Nocturne1975/Nomina-backend.git
-                         https://github.com/Nocturne1975/Nomina-frontend.git
+- Monorepo : https://github.com/Nocturne1975/Nomina-v3

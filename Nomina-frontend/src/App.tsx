@@ -1,33 +1,39 @@
 import { Header } from "./components/Header";
-import { Features } from "./components/Features";
-import { UseCases } from "./components/UseCases";
-import { ApiDemo } from "./components/ApiDemo";
-import { Pricing } from "./components/Pricing";
-import { Documentation } from "./components/Documentation";
 import { Footer } from "./components/Footer";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { flushOutbox } from "./lib/api";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { GeneratePage } from "./pages/GeneratePage";
-import { UsersPage } from "./pages/UsersPage";
-import { AdminPage } from "./pages/AdminPage";
-import { HomePage } from "./pages/HomePage";
 import { FluidBackground } from "./components/FluidBackground";
-import { LoginPage } from "./pages/LoginPage";
-import { RegisterPage } from "./pages/RegisterPage";
-import { DashboardPage } from "./pages/DashboardPage";
-import { SsoCallbackPage } from "./pages/SsoCallbackPage";
-import { CulturesPage } from "./pages/CulturesPage";
-import { CategoriesPage } from "./pages/CategoriesPage";
-import { ConceptsPage } from "./pages/ConceptsPage";
-import { TitresPage } from "./pages/TitresPage";
-import { FragmentsHistoirePage } from "./pages/FragmentsHistoirePage";
-import { NomPersonnagesPage } from "./pages/NomPersonnagesPage";
-import { UniversPage } from "./pages/UniversPage";
-import { LieuxPage } from "./pages/LieuxPage";
-import { NomFamillesPage } from "./pages/NomFamillesPage";
 import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-react";
 import { setApiTokenProvider, apiFetch } from "./lib/api";
+
+const Features = lazy(() => import("./components/Features").then((m) => ({ default: m.Features })));
+const UseCases = lazy(() => import("./components/UseCases").then((m) => ({ default: m.UseCases })));
+const ApiDemo = lazy(() => import("./components/ApiDemo").then((m) => ({ default: m.ApiDemo })));
+const Pricing = lazy(() => import("./components/Pricing").then((m) => ({ default: m.Pricing })));
+const Documentation = lazy(() => import("./components/Documentation").then((m) => ({ default: m.Documentation })));
+
+const GeneratePage = lazy(() => import("./pages/GeneratePage").then((m) => ({ default: m.GeneratePage })));
+const UsersPage = lazy(() => import("./pages/UsersPage").then((m) => ({ default: m.UsersPage })));
+const AdminPage = lazy(() => import("./pages/AdminPage").then((m) => ({ default: m.AdminPage })));
+const HomePage = lazy(() => import("./pages/HomePage").then((m) => ({ default: m.HomePage })));
+const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import("./pages/RegisterPage").then((m) => ({ default: m.RegisterPage })));
+const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const SsoCallbackPage = lazy(() => import("./pages/SsoCallbackPage").then((m) => ({ default: m.SsoCallbackPage })));
+const CulturesPage = lazy(() => import("./pages/CulturesPage").then((m) => ({ default: m.CulturesPage })));
+const CategoriesPage = lazy(() => import("./pages/CategoriesPage").then((m) => ({ default: m.CategoriesPage })));
+const ConceptsPage = lazy(() => import("./pages/ConceptsPage").then((m) => ({ default: m.ConceptsPage })));
+const TitresPage = lazy(() => import("./pages/TitresPage").then((m) => ({ default: m.TitresPage })));
+const FragmentsHistoirePage = lazy(() => import("./pages/FragmentsHistoirePage").then((m) => ({ default: m.FragmentsHistoirePage })));
+const NomPersonnagesPage = lazy(() => import("./pages/NomPersonnagesPage").then((m) => ({ default: m.NomPersonnagesPage })));
+const UniversPage = lazy(() => import("./pages/UniversPage").then((m) => ({ default: m.UniversPage })));
+const LieuxPage = lazy(() => import("./pages/LieuxPage").then((m) => ({ default: m.LieuxPage })));
+const NomFamillesPage = lazy(() => import("./pages/NomFamillesPage").then((m) => ({ default: m.NomFamillesPage })));
+
+function PageLoader() {
+  return <main className="min-h-screen p-6">Chargement…</main>;
+}
 
 function ClerkTokenBridge() {
   const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
@@ -48,8 +54,10 @@ function ClerkTokenBridgeInner() {
 
 function RequireSignedIn(props: { children: JSX.Element }) {
   const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+  const desktopAdminBypass = import.meta.env.VITE_DESKTOP_ADMIN_BYPASS === "true";
 
   if (!clerkEnabled) {
+    if (desktopAdminBypass) return props.children;
     return (
       <main className="min-h-screen p-6">
         <h1 className="text-2xl font-semibold mb-2">Accès restreint</h1>
@@ -70,8 +78,10 @@ function RequireSignedIn(props: { children: JSX.Element }) {
 
 function RequireAdmin(props: { children: JSX.Element }) {
   const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+  const desktopAdminBypass = import.meta.env.VITE_DESKTOP_ADMIN_BYPASS === "true";
 
   if (!clerkEnabled) {
+    if (desktopAdminBypass) return props.children;
     return (
       <main className="min-h-screen p-6">
         <h1 className="text-2xl font-semibold mb-2">Admin</h1>
@@ -157,33 +167,35 @@ export default function App() {
       {!isHome ? (
         <div className="pointer-events-none fixed top-20 inset-x-0 z-40 h-7 bg-gradient-to-b from-[#2d1b4e]/70 via-[#2d1b4e]/20 to-transparent" />
       ) : null}
-      <main>      
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/homepage" element={<Navigate to="/" replace />} />
-          <Route path="/features" element={<Features />} />
-          <Route path="/usecases" element={<UseCases />} />
-          <Route path="/demo" element={<ApiDemo />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/docs" element={<Documentation />} />
-          <Route path="/generate" element={<GeneratePage />} />
-          <Route path="/dashboard" element={<RequireSignedIn><DashboardPage /></RequireSignedIn>} />
-          <Route path="/cultures" element={<RequireAdmin><CulturesPage /></RequireAdmin>} />
-          <Route path="/categories" element={<RequireAdmin><CategoriesPage /></RequireAdmin>} />
-          <Route path="/concepts" element={<RequireAdmin><ConceptsPage /></RequireAdmin>} />
-          <Route path="/titres" element={<RequireAdmin><TitresPage /></RequireAdmin>} />
-          <Route path="/fragments-histoire" element={<RequireAdmin><FragmentsHistoirePage /></RequireAdmin>} />
-          <Route path="/nom-personnages" element={<RequireAdmin><NomPersonnagesPage /></RequireAdmin>} />
-          <Route path="/univers" element={<RequireAdmin><UniversPage /></RequireAdmin>} />
-          <Route path="/lieux" element={<RequireAdmin><LieuxPage /></RequireAdmin>} />
-          <Route path="/nom-familles" element={<RequireAdmin><NomFamillesPage /></RequireAdmin>} />
-          <Route path="/users" element={<RequireAdmin><UsersPage /></RequireAdmin>} />
-          <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/sso-callback" element={<SsoCallbackPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>   
+      <main>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/homepage" element={<Navigate to="/" replace />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/usecases" element={<UseCases />} />
+            <Route path="/demo" element={<ApiDemo />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/docs" element={<Documentation />} />
+            <Route path="/generate" element={<GeneratePage />} />
+            <Route path="/dashboard" element={<RequireSignedIn><DashboardPage /></RequireSignedIn>} />
+            <Route path="/cultures" element={<RequireAdmin><CulturesPage /></RequireAdmin>} />
+            <Route path="/categories" element={<RequireAdmin><CategoriesPage /></RequireAdmin>} />
+            <Route path="/concepts" element={<RequireAdmin><ConceptsPage /></RequireAdmin>} />
+            <Route path="/titres" element={<RequireAdmin><TitresPage /></RequireAdmin>} />
+            <Route path="/fragments-histoire" element={<RequireAdmin><FragmentsHistoirePage /></RequireAdmin>} />
+            <Route path="/nom-personnages" element={<RequireAdmin><NomPersonnagesPage /></RequireAdmin>} />
+            <Route path="/univers" element={<RequireAdmin><UniversPage /></RequireAdmin>} />
+            <Route path="/lieux" element={<RequireAdmin><LieuxPage /></RequireAdmin>} />
+            <Route path="/nom-familles" element={<RequireAdmin><NomFamillesPage /></RequireAdmin>} />
+            <Route path="/users" element={<RequireAdmin><UsersPage /></RequireAdmin>} />
+            <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/sso-callback" element={<SsoCallbackPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
       <Footer />
     </div>

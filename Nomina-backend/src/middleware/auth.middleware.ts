@@ -1,6 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '@clerk/backend';
 
+const devAdminBypassEnabled = () => process.env.ALLOW_DEV_ADMIN_BYPASS === 'true';
+const devAdminUserId = () => (process.env.DEV_ADMIN_USER_ID || 'local-admin').trim();
+
 const getAdminUserIds = (): string[] => {
   const csv = process.env.ADMIN_CLERK_USER_IDS;
   if (csv && csv.trim().length > 0) {
@@ -25,10 +28,22 @@ const extractBearerToken = (req: Request): string | null => {
 
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   const token = extractBearerToken(req);
-  if (!token) return res.status(401).json({ error: 'Authorization manquante' });
+
+  if (!token) {
+    if (devAdminBypassEnabled()) {
+      req.auth = { userId: devAdminUserId(), sessionId: 'dev-bypass' };
+      return next();
+    }
+    return res.status(401).json({ error: 'Authorization manquante' });
+  }
 
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (!secretKey) {
+    if (devAdminBypassEnabled()) {
+      req.auth = { userId: devAdminUserId(), sessionId: 'dev-bypass' };
+      return next();
+    }
+
     console.error('CLERK_SECRET_KEY non défini');
     return res.status(500).json({
       error:
@@ -54,6 +69,10 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 };
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (devAdminBypassEnabled()) {
+    return next();
+  }
+
   const adminUserIds = getAdminUserIds();
   if (adminUserIds.length === 0) {
     return res

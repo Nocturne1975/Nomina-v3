@@ -116,7 +116,12 @@ export async function generateNpcIdeas(options: GenerateNpcOptions) {
   }
   const uniqueNames = dedupeBy(names, (n) => normalizeName(composeFullName(n.valeur ?? "", n.familyName)));
     
-  const fragmentWhere: any = { OR: [{ appliesTo: null }, { appliesTo: "npc" }] };
+  const fragmentWhere: any = {
+    OR: [
+      { appliesTo: null },
+      { appliesTo: { in: ["npc", "personnage", "nomPersonnage"] } },
+    ],
+  };
 
   if (options.cultureId !== undefined) {
     fragmentWhere.AND = [...(fragmentWhere.AND ?? []), { OR: [{ cultureId: options.cultureId }, { cultureId: null }] }];

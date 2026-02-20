@@ -118,9 +118,9 @@ Utilisateur → UI (web/desktop) → API Nomina (Express) → PostgreSQL (Prisma
 
 ## 8. Déploiement
 
-- Déploiement conteneurisé (Docker).
-- Hébergement : Fly.io.
-- Migrations de base de données exécutées au déploiement.
+- Déploiement API serverless sur Vercel (`vercel.json`).
+- Option alternative : déploiement conteneurisé Docker sur Fly.io (`fly.toml`).
+- Migrations Prisma exécutables au déploiement (`npm run migrate:deploy`).
 
 ---
 
@@ -157,10 +157,11 @@ Utilisateur → UI (web/desktop) → API Nomina (Express) → PostgreSQL (Prisma
 ## 11. Contribution & contact
 
 - Contributions via issues et pull requests.
-- Contact : à définir (email).
+- Dépôt : https://github.com/Nocturne1975/Nomina-v3
+- Contact : soniacorbin4@gmail.com
 
 ---
 
 ## 12. Licence
 
-Licence à définir (MIT recommandée pour un projet ouvert).
+Licence non définie dans le dépôt à ce jour.

@@ -63,6 +63,30 @@ const optionalStringQuerySchema = z
   .optional()
   .transform((s) => (s && s.length > 0 ? s : undefined));
 
+function normalizeAppliesToValues(input?: string): string[] | undefined {
+  if (!input) return undefined;
+
+  const raw = input.trim();
+  if (!raw) return undefined;
+
+  const key = raw.toLowerCase();
+  const map: Record<string, string[]> = {
+    npc: ["npc", "personnage", "nomPersonnage"],
+    personnage: ["personnage", "nomPersonnage", "npc"],
+    nompersonnage: ["nomPersonnage", "personnage", "npc"],
+    lieu: ["lieu", "lieux"],
+    lieux: ["lieux", "lieu"],
+    objet: ["objet"],
+    intrigue: ["intrigue", "quete", "quête"],
+    quete: ["quete", "quête", "intrigue"],
+    "quête": ["quête", "quete", "intrigue"],
+    univers: ["univers"],
+    fragmentshistoire: ["fragmentsHistoire"],
+  };
+
+  return map[key] ?? [raw];
+}
+
 export const generateNpcs = async (req: Request, res: Response) => {
   try {
     const parsed = z
@@ -776,12 +800,14 @@ export const generateFragmentsHistoire = async (req: Request, res: Response) => 
 
     const kws = splitKeywords(keywords);
 
+    const appliesToValues = normalizeAppliesToValues(appliesTo);
+
     const rows = await prisma.fragmentsHistoire.findMany({
       where: {
         cultureId,
         categorieId,
         genre: buildGenreWhere(genre),
-        appliesTo,
+        appliesTo: appliesToValues ? { in: appliesToValues } : undefined,
         ...(kws.length > 0
           ? {
               OR: kws.map((kw) => ({

@@ -20,6 +20,8 @@
     "import:titres": "node -r ts-node/register src/scripts/import-titres.ts",
     "import:fragments-histoire": "node -r ts-node/register src/scripts/import-fragments-histoire.ts",
     "import:fragments-histoire:apply": "node -r ts-node/register src/scripts/import-fragments-histoire.ts --apply",
+    "clean:univers": "node -r ts-node/register src/scripts/clean-univers.ts",
+    "clean:univers:apply": "node -r ts-node/register src/scripts/clean-univers.ts --apply",
     "prisma": "prisma", 
     "postinstall": "prisma generate"    
   },

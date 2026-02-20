@@ -28,12 +28,13 @@ npm install
 ### Variables d'environnement (Nomina-backend/.env)
 
 - `DATABASE_URL` : chaîne de connexion PostgreSQL (utilisée par Prisma)
-- `CORS_ORIGIN` (ou `CORS_ORIGINS`) : origins autorisées (séparées par virgules)
+- `CORS_ORIGINS` : origins autorisées (séparées par virgules)
+- `FRONTEND_URL` : origin principale du frontend (optionnel)
 - `PORT` : port de l'API (défaut : 3000)
 
 Authentification (optionnel selon ton usage) :
 - `CLERK_SECRET_KEY` : requis pour les endpoints `/auth/*`
-- `ADMIN_CLERK_USER_ID` : requis pour `/auth/admin/ping`
+- `ADMIN_CLERK_USER_IDS` (ou `ADMIN_CLERK_USER_ID`) : requis pour `/auth/admin/ping`
 
 ### Lancer le serveur
 
@@ -77,7 +78,7 @@ Paramètres (query) typiques : `count`, `cultureId`, `categorieId`, `genre`, `se
 ### Auth (protégé)
 
 - `GET /auth/me` : nécessite un token Clerk (Bearer)
-- `GET /auth/admin/ping` : nécessite un token Clerk + rôle admin (via `ADMIN_CLERK_USER_ID`)
+- `GET /auth/admin/ping` : nécessite un token Clerk + rôle admin (via `ADMIN_CLERK_USER_IDS` ou `ADMIN_CLERK_USER_ID`)
 
 ---
 
@@ -101,7 +102,7 @@ console.log(await res.json());
 ## Notes techniques
 
 - Base : PostgreSQL + Prisma (schéma dans `prisma/schema.prisma`)
-- Déploiement : Docker + Fly.io (migrations via `npm run migrate:deploy`)
+- Déploiement : Vercel (`vercel.json`) ou Docker + Fly.io (`fly.toml`)
 
 * * *
 
@@ -164,7 +165,7 @@ console.log(data);
 -   Accès aux données : Prisma
 -   Base de données : PostgreSQL
 -   Authentification : Clerk (token Bearer) + rôles (Admin via variable d’environnement)
--   Déploiement : Docker + Fly.io (release command de migration Prisma)
+-   Déploiement : Vercel (serverless via `api/index.ts`) ou Docker + Fly.io (release command de migration Prisma)
 
 Schéma simplifié : Utilisateur → UI (web/desktop) → API Nomina (Express) → PostgreSQL (Prisma) → Résultat
 
@@ -197,26 +198,21 @@ Schéma simplifié : Utilisateur → UI (web/desktop) → API Nomina (Express) �
 ## Déploiement (options simples)
 
 -   Local : `npm install` puis `npm run dev`
+-   Vercel : configuration via `vercel.json`.
 -   Fly.io : déploiement Docker (voir `fly.toml`) avec exécution des migrations Prisma au déploiement.
 
 * * *
 
 ## Contribution & contact
 
--   Pour contributions : crée une issue / PR sur le dépôt GitHub (lien à ajouter).
--   Pour retours : [contact@nomina.example](mailto:contact@nomina.example) (remplace par ton email réel).
-
-Modèle de phrase (dans le README du repo) :
-
-> Nomina est un projet en cours. Contributions, idées et retours sont les bienvenus — ouvre une issue ou contacte-moi directement.
+-   Contributions : ouvre une issue ou une PR sur le dépôt GitHub.
+-   Dépôt : https://github.com/Nocturne1975/Nomina-v3
 
 * * *
 
 ## Licence
 
-Indique la licence choisie (ex. MIT, Apache-2.0). Exemple :
-
--   MIT License — voir fichier LICENSE.
+-   Aucune licence explicite n’est définie dans ce dépôt pour le moment.
 
 * * *
 
@@ -225,5 +221,5 @@ Indique la licence choisie (ex. MIT, Apache-2.0). Exemple :
 -   `docs/` : documentation détaillée des endpoints, exemples supplémentaires
 -   `assets/` : logos, icônes, palette couleur (PNG / SVG)
 -   `examples/` : scripts d'exemple (client Node.js), mock data
--   `LICENSE` : fichier de licence
--   `CONTRIBUTING.md` : guide de contribution
+-   `LICENSE` : fichier de licence (optionnel selon remise)
+-   `CONTRIBUTING.md` : guide de contribution (optionnel)

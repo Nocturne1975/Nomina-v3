@@ -24,11 +24,20 @@ const app = express();
 
 app.use(express.json());
 
+const envCorsOrigins = (process.env.CORS_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const corsOrigins = [
+  ...envCorsOrigins,
+  process.env.FRONTEND_URL,
   "https://nomina-v3.vercel.app",
   "http://localhost:5173", // dev Vite
   "http://localhost:3000", // tests locaux
-];
+].filter((origin): origin is string => Boolean(origin));
+
+const vercelPreviewRegex = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
@@ -36,6 +45,8 @@ const corsOptions: CorsOptions = {
     if (!origin) return callback(null, true);
 
     if (corsOrigins.includes(origin)) return callback(null, true);
+
+    if (vercelPreviewRegex.test(origin)) return callback(null, true);
 
     return callback(new Error(`CORS: origin non autorisée: ${origin}`));
   },
