@@ -1,21 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '@clerk/backend';
+import { isUserAdmin } from '../services/auth/adminAccess';
 
 const devAdminBypassEnabled = () => process.env.ALLOW_DEV_ADMIN_BYPASS === 'true';
 const devAdminUserId = () => (process.env.DEV_ADMIN_USER_ID || 'local-admin').trim();
-
-const getAdminUserIds = (): string[] => {
-  const csv = process.env.ADMIN_CLERK_USER_IDS;
-  if (csv && csv.trim().length > 0) {
-    return csv
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
-
-  const single = process.env.ADMIN_CLERK_USER_ID;
-  return single && single.trim().length > 0 ? [single.trim()] : [];
-};
 
 const extractBearerToken = (req: Request): string | null => {
   const authHeader = req.headers.authorization;
@@ -68,21 +56,20 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+export const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
   if (devAdminBypassEnabled()) {
     return next();
   }
 
-  const adminUserIds = getAdminUserIds();
-  if (adminUserIds.length === 0) {
-    return res
-      .status(500)
-      .json({ error: 'ADMIN_CLERK_USER_IDS (ou ADMIN_CLERK_USER_ID) non défini' });
-  }
-
   const userId = req.auth?.userId;
   if (!userId) return res.status(401).json({ error: 'Non authentifié' });
-  if (!adminUserIds.includes(userId)) return res.status(403).json({ error: 'Accès refusé' });
+
+  try {
+    const ok = await isUserAdmin(userId);
+    if (!ok) return res.status(403).json({ error: 'Accès refusé' });
+  } catch {
+    return res.status(500).json({ error: 'Erreur de vérification des droits admin' });
+  }
 
   next();
 };

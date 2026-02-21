@@ -17,6 +17,31 @@ function splitKeywords(raw: string | null | undefined): string[] {
     .slice(0, 6);
 }
 
+function normalizeTextKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\s+/g, " ");
+}
+
+function uniqueByNormalizedText<T>(items: T[], getText: (item: T) => string | null | undefined): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+
+  for (const item of items) {
+    const raw = getText(item) ?? "";
+    const key = normalizeTextKey(raw);
+    if (!key) continue;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+
+  return out;
+}
+
 function scoreKeywordMatch(text: string, keywords: string[]): number {
   const source = (text || "").toLowerCase();
   if (!source || keywords.length === 0) return 0;
@@ -110,16 +135,22 @@ export const generateNpcs = async (req: Request, res: Response) => {
     const { count, cultureId, categorieId, genre, seed, keywords } = parsed.data;
 
     const kws = splitKeywords(keywords);
-    const requestedCount = kws.length > 0 ? Math.min(count * 3, 60) : count;
+    const requestedCount = Math.min(count * 4, 120);
 
     const result = await generateNpcIdeas({ count: requestedCount, cultureId, categorieId, genre, seed });
+    const baseItems = Array.isArray((result as any).items) ? (result as any).items : [];
+    const uniqueBaseItems = uniqueByNormalizedText(baseItems, (it: any) => `${it?.fullName ?? it?.name ?? ""}`);
 
     if (kws.length === 0) {
-      return res.json(result);
+      const items = uniqueBaseItems.slice(0, count);
+      return res.json({
+        ...(result as any),
+        count: items.length,
+        items,
+      });
     }
 
-    const baseItems = Array.isArray((result as any).items) ? (result as any).items : [];
-    const ranked = baseItems
+    const ranked = uniqueBaseItems
       .map((it: any) => ({
         item: it,
         score: scoreKeywordMatch(`${it?.name ?? ""} ${it?.backstory ?? ""}`, kws),
@@ -497,7 +528,9 @@ export const generateNomPersonnages = async (req: Request, res: Response) => {
         }))
       : [];
 
-    const ranked = mappedItems
+    const uniqueMappedItems = uniqueByNormalizedText(mappedItems, (it: any) => `${it?.displayName ?? it?.name ?? ""}`);
+
+    const ranked = uniqueMappedItems
       .map((it: any) => ({
         item: it,
         score: scoreKeywordMatch(`${it?.name ?? ""} ${it?.displayName ?? ""} ${it?.miniBio ?? ""}`, kws),
@@ -505,8 +538,8 @@ export const generateNomPersonnages = async (req: Request, res: Response) => {
       .sort((a: any, b: any) => b.score - a.score);
 
     const matched = kws.length > 0 ? ranked.filter((x: any) => x.score > 0).map((x: any) => x.item) : [];
-    const fallback = kws.length > 0 ? ranked.map((x: any) => x.item) : mappedItems;
-    const items = (kws.length > 0 ? (matched.length > 0 ? matched : fallback) : mappedItems).slice(0, count);
+    const fallback = kws.length > 0 ? ranked.map((x: any) => x.item) : uniqueMappedItems;
+    const items = (kws.length > 0 ? (matched.length > 0 ? matched : fallback) : uniqueMappedItems).slice(0, count);
 
     res.json({
       seed: (generated as any).seed,
@@ -580,7 +613,8 @@ export const generateNomFamille = async (req: Request, res: Response) => {
         });
 
         if (rows.length > 0) {
-          const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((nf) => ({
+          const uniqueRows = uniqueByNormalizedText(rows, (nf) => nf.valeur);
+          const items = sampleWithoutReplacement(uniqueRows, Math.min(count, uniqueRows.length), rng.next).map((nf) => ({
             id: nf.id,
             valeur: nf.valeur,
             cultureId: nf.cultureId ?? null,
@@ -623,7 +657,8 @@ export const generateNomFamille = async (req: Request, res: Response) => {
       orderBy: { id: "asc" },
     });
 
-    const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((nf) => ({
+    const uniqueRows = uniqueByNormalizedText(rows, (nf) => nf.valeur);
+    const items = sampleWithoutReplacement(uniqueRows, Math.min(count, uniqueRows.length), rng.next).map((nf) => ({
       id: nf.id,
       valeur: nf.valeur,
       cultureId: nf.cultureId ?? null,
@@ -638,7 +673,7 @@ export const generateNomFamille = async (req: Request, res: Response) => {
         categorieId: categorieId ?? null,
       },
       items,
-      warning: rows.length === 0 ? "Aucun nom de famille ne match les filtres." : undefined,
+      warning: uniqueRows.length === 0 ? "Aucun nom de famille ne match les filtres." : undefined,
     });
   } catch (error) {
     console.error("Erreur generateNomFamille:", error);
@@ -693,7 +728,8 @@ export const generateLieux = async (req: Request, res: Response) => {
         });
 
         if (rows.length > 0) {
-          const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((l) => ({
+          const uniqueRows = uniqueByNormalizedText(rows, (l) => `${l.value ?? ""} ${l.type ?? ""}`);
+          const items = sampleWithoutReplacement(uniqueRows, Math.min(count, uniqueRows.length), rng.next).map((l) => ({
             id: l.id,
             value: l.value,
             type: l.type ?? null,
@@ -719,7 +755,8 @@ export const generateLieux = async (req: Request, res: Response) => {
             orderBy: { id: "asc" },
           });
 
-          const items = sampleWithoutReplacement(fallbackRows, Math.min(count, fallbackRows.length), rng.next).map((l) => ({
+          const uniqueFallbackRows = uniqueByNormalizedText(fallbackRows, (l) => `${l.value ?? ""} ${l.type ?? ""}`);
+          const items = sampleWithoutReplacement(uniqueFallbackRows, Math.min(count, uniqueFallbackRows.length), rng.next).map((l) => ({
             id: l.id,
             value: l.value,
             type: l.type ?? null,
@@ -735,7 +772,7 @@ export const generateLieux = async (req: Request, res: Response) => {
             },
             items,
             warning:
-              fallbackRows.length === 0
+              uniqueFallbackRows.length === 0
                 ? `Aucun lieu disponible avec les filtres demandés.`
                 : `Aucun lieu trouvé pour "${kws.join(", ")}". Voici des suggestions proches de votre univers.`,
           });
@@ -751,7 +788,8 @@ export const generateLieux = async (req: Request, res: Response) => {
       orderBy: { id: "asc" },
     });
 
-    const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((l) => ({
+    const uniqueRows = uniqueByNormalizedText(rows, (l) => `${l.value ?? ""} ${l.type ?? ""}`);
+    const items = sampleWithoutReplacement(uniqueRows, Math.min(count, uniqueRows.length), rng.next).map((l) => ({
       id: l.id,
       value: l.value,
       type: l.type ?? null,
@@ -763,7 +801,7 @@ export const generateLieux = async (req: Request, res: Response) => {
       count: items.length,
       filters: { categorieId: categorieId ?? null },
       items,
-      warning: rows.length === 0 ? "Aucun Lieu ne match les filtres." : undefined,
+      warning: uniqueRows.length === 0 ? "Aucun Lieu ne match les filtres." : undefined,
     });
   } catch (error) {
     console.error("Erreur generateLieux:", error);
@@ -824,7 +862,8 @@ export const generateFragmentsHistoire = async (req: Request, res: Response) => 
       orderBy: { id: "asc" },
     });
 
-    const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((f) => ({
+    const uniqueRows = uniqueByNormalizedText(rows, (f) => f.texte);
+    const items = sampleWithoutReplacement(uniqueRows, Math.min(count, uniqueRows.length), rng.next).map((f) => ({
       id: f.id,
       texte: f.texte,
       appliesTo: f.appliesTo ?? null,
@@ -844,7 +883,7 @@ export const generateFragmentsHistoire = async (req: Request, res: Response) => 
         keywords: kws.length > 0 ? kws.join(", ") : null,
       },
       items,
-      warning: rows.length === 0
+      warning: uniqueRows.length === 0
         ? kws.length > 0
           ? `Aucun Fragment d'histoire trouvé pour: ${kws.join(", ")}.`
           : "Aucun Fragment d'histoire ne match les filtres."
@@ -940,7 +979,8 @@ export const generateTitres = async (req: Request, res: Response) => {
           return score;
         };
 
-        const ranked = rows
+        const uniqueRows = uniqueByNormalizedText(rows, (t) => `${t.valeur ?? ""} ${t.type ?? ""}`);
+        const ranked = uniqueRows
           .map((t) => ({ t, score: scoreTitre({ valeur: t.valeur, type: t.type ?? null }) }))
           .sort((a, b) => {
             if (b.score !== a.score) return b.score - a.score;
@@ -962,8 +1002,8 @@ export const generateTitres = async (req: Request, res: Response) => {
           count: items.length,
           filters: { cultureId: cultureId ?? null, categorieId: categorieId ?? null, genre: genre ?? null, keywords: kws.join(", ") },
           items,
-          warning: rows.length === 0 ? `Aucun titre trouvé pour: ${kws.join(", ")}` : undefined,
-          info: rows.length > 0 ? `Titres classés par pertinence pour: ${kws.join(", ")}` : undefined,
+          warning: uniqueRows.length === 0 ? `Aucun titre trouvé pour: ${kws.join(", ")}` : undefined,
+          info: uniqueRows.length > 0 ? `Titres classés par pertinence pour: ${kws.join(", ")}` : undefined,
         });
       }
     }
@@ -978,7 +1018,8 @@ export const generateTitres = async (req: Request, res: Response) => {
       orderBy: { id: "asc" },
     });
 
-    const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((t) => ({
+    const uniqueRows = uniqueByNormalizedText(rows, (t) => `${t.valeur ?? ""} ${t.type ?? ""}`);
+    const items = sampleWithoutReplacement(uniqueRows, Math.min(count, uniqueRows.length), rng.next).map((t) => ({
       id: t.id,
       valeur: t.valeur,
       type: t.type ?? null,
@@ -992,7 +1033,7 @@ export const generateTitres = async (req: Request, res: Response) => {
       count: items.length,
       filters: { cultureId: cultureId ?? null, categorieId: categorieId ?? null, genre: genre ?? null },
       items,
-      warning: rows.length === 0 ? "Aucun Titre ne match les filtres." : undefined,
+      warning: uniqueRows.length === 0 ? "Aucun Titre ne match les filtres." : undefined,
     });
   } catch (error) {
     console.error("Erreur generateTitres:", error);
@@ -1059,7 +1100,8 @@ export const generateConcepts = async (req: Request, res: Response) => {
         });
 
         if (rows.length > 0) {
-          const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((c) => {
+          const uniqueRows = uniqueByNormalizedText(rows, (c) => `${c.valeur ?? ""} ${c.type ?? ""}`);
+          const items = sampleWithoutReplacement(uniqueRows, Math.min(count, uniqueRows.length), rng.next).map((c) => {
             const mood = c.mood ?? pick(["mystérieux", "épique", "sombre", "onirique", "tendu", "lumineux"], rng.next);
             const ckws = splitKeywords(c.keywords);
             const k1 = ckws[0] ?? pick(["secret", "quête", "rituel", "héritage", "frontière", "anomalie"], rng.next);
@@ -1156,7 +1198,8 @@ export const generateConcepts = async (req: Request, res: Response) => {
       });
     }
 
-    const items = sampleWithoutReplacement(rows, Math.min(count, rows.length), rng.next).map((c) => {
+    const uniqueRows = uniqueByNormalizedText(rows, (c) => `${c.valeur ?? ""} ${c.type ?? ""}`);
+    const items = sampleWithoutReplacement(uniqueRows, Math.min(count, uniqueRows.length), rng.next).map((c) => {
       const mood = c.mood ?? pick(["mystérieux", "épique", "sombre", "onirique", "tendu", "lumineux"], rng.next);
       const kws = splitKeywords(c.keywords);
       const k1 = kws[0] ?? pick(["secret", "quête", "rituel", "héritage", "frontière", "anomalie"], rng.next);
@@ -1193,7 +1236,7 @@ export const generateConcepts = async (req: Request, res: Response) => {
       filters: { categorieId: categorieId ?? null, conceptId: conceptId ?? null, topic: null },
       items,
       warning:
-        rows.length === 0
+        uniqueRows.length === 0
           ? "Aucun Concept ne match les filtres."
           : usedFallback
             ? "Aucun Concept dans cette catégorie : génération faite sur l'ensemble des concepts."

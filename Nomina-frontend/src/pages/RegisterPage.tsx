@@ -4,12 +4,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
+import { apiFetch } from "../lib/api";
 
 export function RegisterPage() {
 	const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 	const navigate = useNavigate();
 	const { isSignedIn } = useUser();
 	const { isLoaded, signUp, setActive } = useSignUp();
+	const [accountType, setAccountType] = useState<"client" | "admin">("client");
 
 	const [step, setStep] = useState<"form" | "verify-email">("form");
 	const [pending, setPending] = useState(false);
@@ -69,6 +71,18 @@ export function RegisterPage() {
 		setInfo(null);
 		setPending(true);
 		try {
+			const maybeSubmitAdminRequest = async () => {
+				if (accountType !== "admin") return;
+				const displayName = `${firstName} ${lastName}`.trim();
+				await apiFetch<{ status: string; message: string }>("/auth/admin-request", {
+					method: "POST",
+					body: {
+						email: email.trim(),
+						username: displayName || email.trim().split("@")[0],
+					},
+				});
+			};
+
 			if (step === "form") {
 				await signUp.create({
 					emailAddress: email.trim(),
@@ -87,11 +101,16 @@ export function RegisterPage() {
 				try {
 					await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
 					setStep("verify-email");
-					setInfo("Un code de vérification a été envoyé par courriel.");
+					setInfo(
+						accountType === "admin"
+							? "Un code de vérification a été envoyé. Après validation, ta demande Admin sera soumise à Nomina."
+							: "Un code de vérification a été envoyé par courriel."
+					);
 					return;
 				} catch {
 					// Si aucune vérification n'est requise, Clerk peut être déjà "complete".
 					if (signUp.status === "complete") {
+						await maybeSubmitAdminRequest();
 						await setActive?.({ session: signUp.createdSessionId });
 						navigate("/dashboard", { replace: true });
 						return;
@@ -106,6 +125,7 @@ export function RegisterPage() {
 			// Step verify email
 			const attempt = await signUp.attemptEmailAddressVerification({ code: emailCode.trim() });
 			if (attempt.status === "complete") {
+				await maybeSubmitAdminRequest();
 				await setActive?.({ session: attempt.createdSessionId });
 				navigate("/dashboard", { replace: true });
 				return;
@@ -165,9 +185,27 @@ export function RegisterPage() {
 	}
 
 	return (
-		<main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-b from-violet-50 via-white to-pink-50">
+		<main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-b from-[#e2dbf5] via-[#ebe5f8] to-[#f0dde8]">
 			<div className="w-full max-w-[480px]">
 				<h1 className="text-3xl font-semibold mb-4">Créer un compte</h1>
+				<div className="flex gap-2 mb-4">
+					<Button
+						type="button"
+						variant={accountType === "client" ? "default" : "outline"}
+						className="flex-1"
+						onClick={() => setAccountType("client")}
+					>
+						Compte Client
+					</Button>
+					<Button
+						type="button"
+						variant={accountType === "admin" ? "default" : "outline"}
+						className="flex-1"
+						onClick={() => setAccountType("admin")}
+					>
+						Demande Admin
+					</Button>
+				</div>
 				{clerkEnabled && isSignedIn ? (
 					<p className="text-sm opacity-80 mb-4">Tu es déjà connecté. Redirection…</p>
 				) : (
@@ -175,11 +213,16 @@ export function RegisterPage() {
 					Déjà un compte ? <Link to="/login" className="text-[#7b3ff2] hover:underline">Se connecter</Link>
 				</p>
 				)}
-				<Card className="bg-white border-[#d4c5f9] p-6">
+				<Card className="bg-white/92 border-[#d8c9f2] p-6 backdrop-blur-sm shadow-[0_10px_24px_rgba(123,63,242,0.10)]">
 					{clerkEnabled ? (
 						<div className="space-y-4">
 							{error ? <p className="text-sm text-red-600">{error}</p> : null}
 							{info ? <p className="text-sm text-emerald-700">{info}</p> : null}
+							{accountType === "admin" ? (
+								<p className="text-xs text-[#5f4a86]">
+									Le compte sera créé normalement, mais l’accès administrateur restera en attente jusqu’à approbation de l’équipe Nomina.
+								</p>
+							) : null}
 
 							{step === "form" ? (
 								<>
