@@ -45,6 +45,9 @@ export function AdminPage() {
             <Button asChild variant="outline" size="sm">
               <Link to="/lieux">Lieux</Link>
             </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/creatures">Créatures</Link>
+            </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/users">Utilisateurs</Link>
           </Button>

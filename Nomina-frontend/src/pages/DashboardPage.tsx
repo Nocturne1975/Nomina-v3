@@ -27,6 +27,7 @@ type Stats = {
   fragments: number;
   nomPersonnages: number;
   lieux: number;
+  creatures: number;
   users: number;
 };
 
@@ -105,7 +106,7 @@ function DashboardInner() {
       setStatsLoading(true);
       try {
         const token = await getToken();
-        const [cultures, categories, concepts, titres, fragments, nomPersonnages, lieux, users] = await Promise.all([
+        const [cultures, categories, concepts, titres, fragments, nomPersonnages, lieux, creatures, users] = await Promise.all([
           apiFetch<{ total: number }>("/cultures/total", { token }).catch(() => ({ total: 0 })),
           apiFetch<{ total: number }>("/categories/total", { token }).catch(() => ({ total: 0 })),
           apiFetch<{ total: number }>("/concepts/total", { token }).catch(() => ({ total: 0 })),
@@ -113,6 +114,7 @@ function DashboardInner() {
           apiFetch<{ total: number }>("/fragmentsHistoire/total", { token }).catch(() => ({ total: 0 })),
           apiFetch<{ total: number }>("/nomPersonnages/total", { token }).catch(() => ({ total: 0 })),
           apiFetch<{ total: number }>("/lieux/total", { token }).catch(() => ({ total: 0 })),
+          apiFetch<{ total: number }>("/creatures/total", { token }).catch(() => ({ total: 0 })),
           me?.isAdmin 
             ? apiFetch<{ total: number }>("/users/total", { token }).catch(() => ({ total: 0 }))
             : Promise.resolve({ total: 0 }),
@@ -127,6 +129,7 @@ function DashboardInner() {
             fragments: fragments.total,
             nomPersonnages: nomPersonnages.total,
             lieux: lieux.total,
+            creatures: creatures.total,
             users: users.total,
           });
         }
@@ -239,6 +242,14 @@ function DashboardInner() {
                 link="/lieux"
                 isAdmin={me?.isAdmin}
               />
+              <StatCard
+                icon={<Sparkles className="w-5 h-5" />}
+                label="Créatures"
+                value={stats.creatures}
+                color="bg-violet-500"
+                link="/creatures"
+                isAdmin={me?.isAdmin}
+              />
               {me?.isAdmin ? (
                 <StatCard
                   icon={<Users className="w-5 h-5" />}
@@ -304,6 +315,16 @@ function DashboardInner() {
                     <Link to="/cultures">
                       <Globe className="w-4 h-4 mr-2" />
                       Gérer les cultures
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="justify-start border-[#d4c5f9] bg-white hover:bg-[#7b3ff2]/10 text-[#2d1b4e]"
+                  >
+                    <Link to="/creatures">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Gérer les créatures
                     </Link>
                   </Button>
                   <Button

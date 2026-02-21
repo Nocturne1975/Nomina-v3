@@ -1,0 +1,393 @@
+import { useEffect, useMemo, useState } from "react";
+import { apiFetch, ApiError } from "../lib/api";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+
+type Culture = { id: number; name: string };
+type Category = { id: number; name: string };
+type PrenomRef = { id: number; valeur?: string | null };
+type NomFamilleRef = { id: number; valeur?: string | null };
+type PersonnageRef = {
+  id: number;
+  prenom?: PrenomRef | null;
+  nomFamille?: NomFamilleRef | null;
+};
+
+type Creature = {
+  id: number;
+  valeur: string;
+  type?: string | null;
+  description?: string | null;
+  personnageId?: number | null;
+  cultureId?: number | null;
+  categorieId?: number | null;
+  personnage?: PersonnageRef | null;
+  culture?: Culture | null;
+  categorie?: Category | null;
+};
+
+type FormState = {
+  valeur: string;
+  type: string;
+  description: string;
+  personnageId: string;
+  cultureId: string;
+  categorieId: string;
+};
+
+type FieldErrors = Partial<Record<keyof FormState, string>>;
+
+function validateForm(form: FormState): FieldErrors {
+  const errs: FieldErrors = {};
+  if (!form.valeur.trim()) errs.valeur = "La valeur est obligatoire";
+  if (form.valeur.trim().length > 120) errs.valeur = "Trop long (max 120)";
+  if (form.type.trim().length > 80) errs.type = "Trop long (max 80)";
+  if (form.description.trim().length > 2000) errs.description = "Trop long (max 2000)";
+  return errs;
+}
+
+function formatPersonnageLabel(p: PersonnageRef | null | undefined): string {
+  if (!p) return "—";
+  const prenom = p.prenom?.valeur?.trim() ?? "";
+  const nom = p.nomFamille?.valeur?.trim() ?? "";
+  const label = `${prenom} ${nom}`.trim();
+  return label || `Personnage #${p.id}`;
+}
+
+export function CreaturesPage() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const [items, setItems] = useState<Creature[]>([]);
+  const [cultures, setCultures] = useState<Culture[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [personnages, setPersonnages] = useState<PersonnageRef[]>([]);
+
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const selected = useMemo(() => items.find((c) => c.id === selectedId) ?? null, [items, selectedId]);
+
+  const [mode, setMode] = useState<"create" | "edit">("create");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [form, setForm] = useState<FormState>({
+    valeur: "",
+    type: "",
+    description: "",
+    personnageId: "",
+    cultureId: "",
+    categorieId: "",
+  });
+  const [formErrors, setFormErrors] = useState<FieldErrors>({});
+
+  async function refreshAll() {
+    const [list, cs, cats, pers] = await Promise.all([
+      apiFetch<Creature[]>("/creatures", { cacheTtlMs: 0 }),
+      apiFetch<Culture[]>("/cultures", { cacheTtlMs: 0 }).catch(() => [] as Culture[]),
+      apiFetch<Category[]>("/categories", { cacheTtlMs: 0 }).catch(() => [] as Category[]),
+      apiFetch<PersonnageRef[]>("/personnages", { cacheTtlMs: 0 }).catch(() => [] as PersonnageRef[]),
+    ]);
+
+    setItems(list);
+    setCultures(cs);
+    setCategories(cats);
+    setPersonnages(pers);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        await refreshAll();
+      } catch (e) {
+        if (cancelled) return;
+        const msg = e instanceof ApiError ? `${e.message} (HTTP ${e.status})` : String(e);
+        setError(msg);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function resetToCreate() {
+    setMode("create");
+    setSelectedId(null);
+    setForm({
+      valeur: "",
+      type: "",
+      description: "",
+      personnageId: "",
+      cultureId: "",
+      categorieId: "",
+    });
+    setFormErrors({});
+  }
+
+  function startEdit(c: Creature) {
+    setMode("edit");
+    setSelectedId(c.id);
+    setForm({
+      valeur: c.valeur ?? "",
+      type: c.type ?? "",
+      description: c.description ?? "",
+      personnageId: c.personnageId ? String(c.personnageId) : "",
+      cultureId: c.cultureId ? String(c.cultureId) : "",
+      categorieId: c.categorieId ? String(c.categorieId) : "",
+    });
+    setFormErrors({});
+  }
+
+  async function onSubmit() {
+    setSuccess(null);
+    setError(null);
+
+    const errs = validateForm(form);
+    setFormErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    setIsSubmitting(true);
+    try {
+      const body = {
+        valeur: form.valeur.trim(),
+        type: form.type.trim() ? form.type.trim() : null,
+        description: form.description.trim() ? form.description.trim() : null,
+        personnageId: form.personnageId ? Number(form.personnageId) : null,
+        cultureId: form.cultureId ? Number(form.cultureId) : null,
+        categorieId: form.categorieId ? Number(form.categorieId) : null,
+      };
+
+      if (mode === "create") {
+        await apiFetch<Creature>("/creatures", { method: "POST", body });
+        setSuccess("Créature créée");
+      } else {
+        if (!selected) throw new Error("Aucune créature sélectionnée");
+        await apiFetch<Creature>(`/creatures/${selected.id}`, { method: "PUT", body });
+        setSuccess("Créature modifiée");
+      }
+
+      await refreshAll();
+      resetToCreate();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 0 && e.payload?.queued) {
+        setSuccess("Hors‑ligne: requête mise en attente (outbox)");
+        resetToCreate();
+        return;
+      }
+      const msg = e instanceof ApiError ? `${e.message} (HTTP ${e.status})` : String(e);
+      setError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function onDelete(c: Creature) {
+    setSuccess(null);
+    setError(null);
+    const ok = confirm(`Supprimer la créature “${c.valeur}” ?`);
+    if (!ok) return;
+
+    setIsSubmitting(true);
+    try {
+      await apiFetch<void>(`/creatures/${c.id}`, { method: "DELETE" });
+      setSuccess("Créature supprimée");
+      if (selectedId === c.id) setSelectedId(null);
+      await refreshAll();
+      resetToCreate();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 0 && e.payload?.queued) {
+        setSuccess("Hors‑ligne: suppression mise en attente (outbox)");
+        if (selectedId === c.id) setSelectedId(null);
+        resetToCreate();
+        return;
+      }
+      const msg = e instanceof ApiError ? `${e.message} (HTTP ${e.status})` : String(e);
+      setError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen p-6">
+      <h1 className="text-3xl font-semibold mb-6">Créatures</h1>
+
+      {loading ? <p>Chargement…</p> : null}
+      {error ? <p className="text-red-600 mb-4">{error}</p> : null}
+      {success ? <p className="text-green-700 mb-4">{success}</p> : null}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="p-4 border-[#d4c5f9] lg:col-span-2">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-lg font-semibold">Liste</h2>
+            <Button variant="outline" onClick={() => refreshAll().catch(() => undefined)} disabled={loading}>
+              Rafraîchir
+            </Button>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Valeur</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Personnage lié</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="opacity-70">
+                    Aucune créature.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                items.map((c) => (
+                  <TableRow
+                    key={c.id}
+                    className={selectedId === c.id ? "bg-muted/50" : undefined}
+                    onClick={() => setSelectedId(c.id)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <TableCell>{c.id}</TableCell>
+                    <TableCell className="font-medium">{c.valeur}</TableCell>
+                    <TableCell>{c.type ?? "—"}</TableCell>
+                    <TableCell>{formatPersonnageLabel(c.personnage)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEdit(c);
+                          }}
+                          disabled={isSubmitting}
+                        >
+                          Modifier
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(c).catch(() => undefined);
+                          }}
+                          disabled={isSubmitting}
+                        >
+                          Supprimer
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+
+        <Card className="p-4 border-[#d4c5f9]">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold">{mode === "create" ? "Créer" : "Modifier"}</h2>
+            {mode === "edit" ? (
+              <Button variant="outline" onClick={resetToCreate} disabled={isSubmitting}>
+                Annuler
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm opacity-80">Valeur *</label>
+              <Input
+                value={form.valeur}
+                onChange={(e) => setForm((s) => ({ ...s, valeur: e.target.value }))}
+                placeholder="Ex: Dragon d’obsidienne"
+              />
+              {formErrors.valeur ? <div className="text-sm text-red-600 mt-1">{formErrors.valeur}</div> : null}
+            </div>
+
+            <div>
+              <label className="text-sm opacity-80">Type</label>
+              <Input value={form.type} onChange={(e) => setForm((s) => ({ ...s, type: e.target.value }))} />
+              {formErrors.type ? <div className="text-sm text-red-600 mt-1">{formErrors.type}</div> : null}
+            </div>
+
+            <div>
+              <label className="text-sm opacity-80">Description / Bio</label>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
+                rows={4}
+              />
+              {formErrors.description ? <div className="text-sm text-red-600 mt-1">{formErrors.description}</div> : null}
+            </div>
+
+            <div>
+              <label className="text-sm opacity-80">Personnage lié</label>
+              <select
+                value={form.personnageId}
+                onChange={(e) => setForm((s) => ({ ...s, personnageId: e.target.value }))}
+                className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+              >
+                <option value="">(Aucun)</option>
+                {personnages.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {formatPersonnageLabel(p)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm opacity-80">Culture</label>
+              <select
+                value={form.cultureId}
+                onChange={(e) => setForm((s) => ({ ...s, cultureId: e.target.value }))}
+                className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+              >
+                <option value="">(Aucune)</option>
+                {cultures.map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm opacity-80">Catégorie</label>
+              <select
+                value={form.categorieId}
+                onChange={(e) => setForm((s) => ({ ...s, categorieId: e.target.value }))}
+                className="mt-2 w-full h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+              >
+                <option value="">(Aucune)</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Button onClick={() => onSubmit().catch(() => undefined)} disabled={isSubmitting}>
+              {isSubmitting ? "Envoi…" : mode === "create" ? "Créer" : "Enregistrer"}
+            </Button>
+
+            <p className="text-xs opacity-70">Note: les écritures sont réservées à l’admin.</p>
+          </div>
+        </Card>
+      </div>
+    </main>
+  );
+}

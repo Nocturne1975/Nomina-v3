@@ -824,7 +824,7 @@ export function GeneratePage() {
                         const clamp = (s: string, n = 180) => (s.length > n ? `${s.slice(0, n).trim()}…` : s);
                         switch (generateWhat) {
                           case "npcs":
-                            return item.backstory ? clamp(String(item.backstory), 220) : "Biographie générée pour votre univers.";
+                            return item.backstory ? String(item.backstory) : "Biographie générée pour votre univers.";
                           case "nomPersonnages":
                             return "Prénom généré.";
                           case "nomFamille":
@@ -885,7 +885,11 @@ export function GeneratePage() {
                               </div>
                             </div>
 
-                            <p className="text-sm text-[#c5bfd9] leading-relaxed min-h-[3.5rem]">
+                            <p
+                              className={`text-sm text-[#c5bfd9] leading-relaxed min-h-[3.5rem] ${
+                                generateWhat === "npcs" ? "max-h-44 overflow-y-auto pr-1" : ""
+                              }`}
+                            >
                               {description}
                             </p>
 

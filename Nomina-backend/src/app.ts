@@ -13,10 +13,12 @@ import NomPersonnageRoutes from "./routes/NomPersonnageRoutes";
 import FragmentsHistoireRoutes from "./routes/FragmentsHistoireRoutes";
 import TitreRoutes from "./routes/TitreRoutes";
 import ConceptRoutes from "./routes/ConceptRoutes";
+import CreatureRoutes from "./routes/CreatureRoutes";
 import GenerateRoutes from "./routes/GenerateRoutes";
 import UniversThematiqueRoutes from "./routes/UniversThematiqueRoutes";
 import LieuxRoutes from "./routes/LieuxRoutes";
 import NomFamilleRoutes from "./routes/NomFamilleRoutes";
+import PersonnageRoutes from "./routes/PersonnageRoutes";
 
 dotenv.config();
 
@@ -69,9 +71,11 @@ app.use("/cultures", CultureRoutes);
 app.use("/nomPersonnages", NomPersonnageRoutes);
 app.use("/prenoms", NomPersonnageRoutes);
 app.use("/nomFamilles", NomFamilleRoutes);
+app.use("/personnages", PersonnageRoutes);
 app.use("/fragmentsHistoire", FragmentsHistoireRoutes);
 app.use("/titres", TitreRoutes);
 app.use("/concepts", ConceptRoutes);
+app.use("/creatures", CreatureRoutes);
 app.use("/lieux", LieuxRoutes);
 app.use("/univers", UniversThematiqueRoutes);
 

@@ -185,9 +185,9 @@ export function RegisterPage() {
 	}
 
 	return (
-		<main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-b from-[#e2dbf5] via-[#ebe5f8] to-[#f0dde8]">
+		<main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-b from-[#d6c9ec] via-[#e3d7f1] to-[#ead5e2]">
 			<div className="w-full max-w-[480px]">
-				<h1 className="text-3xl font-semibold mb-4">Créer un compte</h1>
+				<h1 className="text-3xl font-semibold mb-4 text-[#2d1b4e]">Créer un compte</h1>
 				<div className="flex gap-2 mb-4">
 					<Button
 						type="button"
@@ -207,19 +207,19 @@ export function RegisterPage() {
 					</Button>
 				</div>
 				{clerkEnabled && isSignedIn ? (
-					<p className="text-sm opacity-80 mb-4">Tu es déjà connecté. Redirection…</p>
+					<p className="text-sm text-[#4c3575] mb-4">Tu es déjà connecté. Redirection…</p>
 				) : (
-				<p className="text-sm opacity-80 mb-4">
+				<p className="text-sm text-[#4c3575] mb-4">
 					Déjà un compte ? <Link to="/login" className="text-[#7b3ff2] hover:underline">Se connecter</Link>
 				</p>
 				)}
-				<Card className="bg-white/92 border-[#d8c9f2] p-6 backdrop-blur-sm shadow-[0_10px_24px_rgba(123,63,242,0.10)]">
+				<Card className="bg-white/96 border-[#bfa1ea] p-6 backdrop-blur-sm shadow-[0_14px_32px_rgba(74,36,130,0.18)]">
 					{clerkEnabled ? (
 						<div className="space-y-4">
 							{error ? <p className="text-sm text-red-600">{error}</p> : null}
 							{info ? <p className="text-sm text-emerald-700">{info}</p> : null}
 							{accountType === "admin" ? (
-								<p className="text-xs text-[#5f4a86]">
+								<p className="text-xs text-[#4c3575]">
 									Le compte sera créé normalement, mais l’accès administrateur restera en attente jusqu’à approbation de l’équipe Nomina.
 								</p>
 							) : null}
@@ -227,38 +227,39 @@ export function RegisterPage() {
 							{step === "form" ? (
 								<>
 									<div>
-										<label className="text-sm opacity-80">Prénom</label>
-										<Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+										<label className="text-sm text-[#3b275f]">Prénom</label>
+										<Input className="bg-white text-[#2d1b4e] border-[#bfa1ea]" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
 									</div>
 									<div>
-										<label className="text-sm opacity-80">Nom</label>
-										<Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+										<label className="text-sm text-[#3b275f]">Nom</label>
+										<Input className="bg-white text-[#2d1b4e] border-[#bfa1ea]" value={lastName} onChange={(e) => setLastName(e.target.value)} />
 									</div>
 									<div>
-										<label className="text-sm opacity-80">Courriel</label>
-										<Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+										<label className="text-sm text-[#3b275f]">Courriel</label>
+										<Input className="bg-white text-[#2d1b4e] border-[#bfa1ea]" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
 									</div>
 									<div>
-										<label className="text-sm opacity-80">Téléphone</label>
+										<label className="text-sm text-[#3b275f]">Téléphone</label>
 										<Input
+											className="bg-white text-[#2d1b4e] border-[#bfa1ea] placeholder:text-[#7b6a9f]"
 											value={phone}
 											onChange={(e) => setPhone(e.target.value)}
 											type="tel"
 											placeholder="+1 555 555 5555"
 										/>
-										<p className="text-xs opacity-70 mt-1">Optionnel (selon config Clerk).</p>
+										<p className="text-xs text-[#5b4a7f] mt-1">Optionnel (selon config Clerk).</p>
 									</div>
 									<div>
-										<label className="text-sm opacity-80">Mot de passe</label>
-										<Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" />
-										<p className="text-xs opacity-70 mt-1">Minimum 8 caractères.</p>
+										<label className="text-sm text-[#3b275f]">Mot de passe</label>
+										<Input className="bg-white text-[#2d1b4e] border-[#bfa1ea]" value={password} onChange={(e) => setPassword(e.target.value)} type="password" />
+										<p className="text-xs text-[#5b4a7f] mt-1">Minimum 8 caractères.</p>
 									</div>
 								</>
 							) : (
 								<div>
-									<label className="text-sm opacity-80">Code reçu par courriel</label>
-									<Input value={emailCode} onChange={(e) => setEmailCode(e.target.value)} inputMode="numeric" />
-									<p className="text-xs opacity-70 mt-1">Vérifie ta boîte courriel (et le spam).</p>
+									<label className="text-sm text-[#3b275f]">Code reçu par courriel</label>
+									<Input className="bg-white text-[#2d1b4e] border-[#bfa1ea]" value={emailCode} onChange={(e) => setEmailCode(e.target.value)} inputMode="numeric" />
+									<p className="text-xs text-[#5b4a7f] mt-1">Vérifie ta boîte courriel (et le spam).</p>
 									<Button
 										variant="outline"
 										className="mt-3"

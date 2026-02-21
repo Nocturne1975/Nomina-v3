@@ -8,6 +8,11 @@ type NomFamilleRef = {
   valeur?: string;
 };
 
+type CreatureRef = {
+  id: number;
+  valeur: string;
+};
+
 export interface Personnage {
   id: number;
   prenomId: number;
@@ -22,6 +27,7 @@ export interface Personnage {
   culture?: Culture;
   categorieId?: number;
   categorie?: Categorie;
+  creatures?: CreatureRef[];
   createdAt: Date;
   updatedAt: Date;
 }

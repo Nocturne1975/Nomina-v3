@@ -14,6 +14,7 @@ export function LoginPage() {
 	const clerk = useClerk();
 	const { isLoaded, signIn, setActive } = useSignIn();
 	const [accountType, setAccountType] = useState<"client" | "admin">("client");
+	const [step, setStep] = useState<"choose" | "login">("choose");
 
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -23,6 +24,12 @@ export function LoginPage() {
 	const canSubmit = useMemo(() => {
 		return !pending && !isSignedIn && email.trim().length > 0 && password.trim().length > 0;
 	}, [email, isSignedIn, password, pending]);
+
+	function startLoginStep(type: "client" | "admin") {
+		setAccountType(type);
+		setStep("login");
+		setError(null);
+	}
 
 	useEffect(() => {
 		if (!clerkEnabled) return;
@@ -39,10 +46,10 @@ export function LoginPage() {
 		setPending(true);
 		try {
 			const ensureAdminAccess = async () => {
-				for (let i = 0; i < 6; i++) {
+				for (let i = 0; i < 15; i++) {
 					const token = await getToken().catch(() => null);
 					if (!token) {
-						await new Promise((r) => setTimeout(r, 200));
+						await new Promise((r) => setTimeout(r, 300));
 						continue;
 					}
 
@@ -53,7 +60,7 @@ export function LoginPage() {
 						});
 						return me.isAdmin;
 					} catch {
-						await new Promise((r) => setTimeout(r, 200));
+						await new Promise((r) => setTimeout(r, 300));
 					}
 				}
 				return false;
@@ -67,7 +74,7 @@ export function LoginPage() {
 					const isAdmin = await ensureAdminAccess();
 					if (!isAdmin) {
 						await clerk.signOut().catch(() => undefined);
-						setError("Ce compte n'a pas les droits administrateur.");
+						setError("Impossible de valider les droits admin (session expirée ou droits insuffisants). Reconnecte-toi puis réessaie.");
 						return;
 					}
 				}
@@ -113,16 +120,16 @@ export function LoginPage() {
 	}
 
 	return (
-		<main className="min-h-screen p-6 bg-gradient-to-b from-[#0f0b1a] via-[#1b1230] to-[#0f0b1a] text-[#f3efff]">
+		<main className="min-h-screen p-6 bg-gradient-to-b from-[#171029] via-[#24193f] to-[#171029] text-[#f3efff]">
 			<div className="w-full max-w-6xl mx-auto py-6">
 				<div className="text-center mb-8">
 					<h1 className="text-3xl font-semibold mb-2 text-white">Accédez à votre espace</h1>
-					<p className="text-sm text-[#cfc3ee]">Choisissez votre type de compte pour commencer</p>
+					<p className="text-sm text-[#b9a3e3]">Choisissez votre type de compte pour commencer</p>
 				</div>
 				{clerkEnabled && isSignedIn ? (
-					<p className="text-sm text-[#cfc3ee] mb-4">Tu es déjà connecté. Redirection…</p>
+					<p className="text-sm text-[#b9a3e3] mb-4">Tu es déjà connecté. Redirection…</p>
 				) : (
-					<p className="text-sm text-[#cfc3ee] mb-6 text-center">
+					<p className="text-sm text-[#b9a3e3] mb-6 text-center">
 						Pas encore de compte ?{" "}
 						<Link to="/register" className="text-[#7b3ff2] hover:underline">
 							S’inscrire
@@ -130,16 +137,17 @@ export function LoginPage() {
 					</p>
 				)}
 
+				{step === "choose" ? (
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 					<Card
 						className={`relative overflow-hidden p-6 border-[#4c2d79] bg-gradient-to-br from-[#1a1230] to-[#120d24] text-[#e7defc] cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(45,27,78,0.45)] ${accountType === "client" ? "ring-2 ring-[#7b3ff2] shadow-[0_12px_30px_rgba(123,63,242,0.28)]" : ""}`}
-						onClick={() => setAccountType("client")}
+						onClick={() => startLoginStep("client")}
 					>
 						<div className="pointer-events-none absolute -top-14 -right-10 h-36 w-36 rounded-full bg-[#7b3ff2]/20 blur-2xl" />
 						<div className="pointer-events-none absolute -bottom-16 -left-8 h-28 w-28 rounded-full bg-[#5c2bb8]/20 blur-xl" />
 						<div className="w-12 h-12 rounded-full bg-[#2f1d55] border border-[#5f34a8] flex items-center justify-center text-[#cdb7ff] text-xl mb-4">👤</div>
 						<h2 className="text-2xl font-semibold mb-3 text-white">Compte Client</h2>
-						<p className="text-[#cfc3ee] mb-4">Réservez, générez et collaborez sur vos univers narratifs.</p>
+						<p className="text-[#b9a3e3] mb-4">Réservez, générez et collaborez sur vos univers narratifs.</p>
 						<ul className="space-y-2 text-sm mb-5">
 							<li>• Génération de noms et concepts</li>
 							<li>• Historique de vos essais</li>
@@ -149,7 +157,7 @@ export function LoginPage() {
 						<Button
 							className="w-full"
 							variant={accountType === "client" ? "default" : "outline"}
-							onClick={() => setAccountType("client")}
+							onClick={() => startLoginStep("client")}
 						>
 							Accéder à mon compte
 						</Button>
@@ -157,13 +165,13 @@ export function LoginPage() {
 
 					<Card
 						className={`relative overflow-hidden p-6 border-[#4c2d79] bg-gradient-to-br from-[#1a1230] to-[#120d24] text-[#e7defc] cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(45,27,78,0.45)] ${accountType === "admin" ? "ring-2 ring-[#7b3ff2] shadow-[0_12px_30px_rgba(123,63,242,0.28)]" : ""}`}
-						onClick={() => setAccountType("admin")}
+						onClick={() => startLoginStep("admin")}
 					>
 						<div className="pointer-events-none absolute -top-14 -right-10 h-36 w-36 rounded-full bg-[#7b3ff2]/20 blur-2xl" />
 						<div className="pointer-events-none absolute -bottom-16 -left-8 h-28 w-28 rounded-full bg-[#5c2bb8]/20 blur-xl" />
 						<div className="w-12 h-12 rounded-full bg-[#2f1d55] border border-[#5f34a8] flex items-center justify-center text-[#cdb7ff] text-xl mb-4">⚙️</div>
 						<h2 className="text-2xl font-semibold mb-3 text-white">Compte Administrateur</h2>
-						<p className="text-[#cfc3ee] mb-4">Gérez les données Nomina, les utilisateurs et la cohérence du contenu.</p>
+						<p className="text-[#b9a3e3] mb-4">Gérez les données Nomina, les utilisateurs et la cohérence du contenu.</p>
 						<ul className="space-y-2 text-sm mb-5">
 							<li>• Gestion complète des ressources</li>
 							<li>• Administration des utilisateurs</li>
@@ -173,18 +181,32 @@ export function LoginPage() {
 						<Button
 							className="w-full"
 							variant={accountType === "admin" ? "default" : "outline"}
-							onClick={() => setAccountType("admin")}
+							onClick={() => startLoginStep("admin")}
 						>
 							Espace administrateur
 						</Button>
 					</Card>
 				</div>
+				) : null}
 
+				{step === "login" ? (
 				<Card
 					className={`relative overflow-hidden p-6 max-w-[560px] mx-auto border-[#4c2d79] bg-gradient-to-br from-[#1a1230] to-[#120d24] text-[#e7defc] shadow-[0_10px_30px_rgba(45,27,78,0.45)] ${accountType === "client" ? "ring-2 ring-[#7b3ff2]" : "ring-2 ring-[#5f34a8]"}`}
 				>
 					<div className="pointer-events-none absolute -top-14 -right-10 h-36 w-36 rounded-full bg-[#7b3ff2]/20 blur-2xl" />
 					<div className="pointer-events-none absolute -bottom-16 -left-8 h-28 w-28 rounded-full bg-[#5c2bb8]/20 blur-xl" />
+					<div className="mb-3">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => {
+								setStep("choose");
+								setError(null);
+							}}
+						>
+							← Retour
+						</Button>
+					</div>
 					<h3 className="text-lg font-semibold mb-4 text-white">
 						{accountType === "admin" ? "Connexion Administrateur" : "Connexion Client"}
 					</h3>
@@ -192,7 +214,7 @@ export function LoginPage() {
 						<div className="space-y-4">
 							{error ? <p className="text-sm text-red-600">{error}</p> : null}
 							<div className="space-y-2">
-								<p className="text-sm text-[#cfc3ee]">Se connecter avec</p>
+								<p className="text-sm text-[#b9a3e3]">Se connecter avec</p>
 								<div className="flex flex-col gap-2">
 									<Button
 										variant="outline"
@@ -222,12 +244,22 @@ export function LoginPage() {
 							</div>
 							<div className="h-px bg-[#3d2a63]" />
 							<div>
-								<label className="text-sm text-[#cfc3ee]">Courriel</label>
-								<Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+								<label className="text-sm text-[#b9a3e3]">Courriel</label>
+								<Input
+									className="bg-[#f4efff] text-[#2b1748] placeholder:text-[#6f4da5] border-[#bda3ec]"
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+									type="email"
+								/>
 							</div>
 							<div>
-								<label className="text-sm text-[#cfc3ee]">Mot de passe</label>
-								<Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" />
+								<label className="text-sm text-[#b9a3e3]">Mot de passe</label>
+								<Input
+									className="bg-[#f4efff] text-[#2b1748] placeholder:text-[#6f4da5] border-[#bda3ec]"
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									type="password"
+								/>
 							</div>
 							<Button onClick={() => handleSubmit().catch(() => undefined)} disabled={!canSubmit}>
 								{pending
@@ -240,12 +272,13 @@ export function LoginPage() {
 					) : (
 						<div className="text-[#e7defc]">
 							<p className="mb-2">L’authentification est désactivée.</p>
-							<p className="text-sm text-[#cfc3ee]">
+							<p className="text-sm text-[#b9a3e3]">
 								Ajoute <code>VITE_CLERK_PUBLISHABLE_KEY</code> dans l’environnement pour activer la connexion.
 							</p>
 						</div>
 					)}
 				</Card>
+				) : null}
 			</div>
 		</main>
 	);

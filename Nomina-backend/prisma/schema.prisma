@@ -49,6 +49,7 @@ model Categorie {
   concepts          Concept[] // opposite relation field
   nomFamilles       NomFamille[] // opposite relation field
   personnages       Personnage[]
+  creatures         Creature[]
 }
 
 model Culture {
@@ -63,6 +64,7 @@ model Culture {
   titres            Titre[] // opposite relation field
   nomFamilles       NomFamille[] // opposite relation field
   personnages       Personnage[]
+  creatures         Creature[]
 }
 
 model NomFamille {
@@ -149,6 +151,7 @@ model Personnage {
   culture      Culture?   @relation(fields: [cultureId], references: [id])
   categorieId  Int?
   categorie    Categorie? @relation(fields: [categorieId], references: [id])
+  creatures    Creature[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -159,6 +162,21 @@ model Concept {
   type        String?
   mood        String?
   keywords    String?
+  categorieId Int?
+  categorie   Categorie? @relation(fields: [categorieId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Creature {
+  id          Int        @id @default(autoincrement())
+  valeur      String
+  type        String?
+  description String?
+  personnageId Int?
+  personnage   Personnage? @relation(fields: [personnageId], references: [id])
+  cultureId   Int?
+  culture     Culture?   @relation(fields: [cultureId], references: [id])
   categorieId Int?
   categorie   Categorie? @relation(fields: [categorieId], references: [id])
   createdAt   DateTime   @default(now())

@@ -136,13 +136,29 @@ export function Header() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden text-white"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Mobile Actions */}
+          <div className="md:hidden flex items-center gap-2">
+            {clerkEnabled ? (
+              <SignedIn>
+                <Button
+                  variant="ghost"
+                  className="text-[#d4c5f9] hover:text-white hover:bg-[#7b3ff2]/20 px-2"
+                  onClick={() => signOut({ redirectUrl: "/" })}
+                  aria-label="Se déconnecter"
+                  title="Se déconnecter"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </SignedIn>
+            ) : null}
+            <button
+              className="text-white"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
