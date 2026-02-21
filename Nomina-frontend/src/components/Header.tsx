@@ -110,22 +110,23 @@ export function Header() {
                       </span>
                     </div>
                     <Button
-                      variant="ghost"
-                      className="text-[#d4c5f9] hover:text-white hover:bg-[#7b3ff2]/20 px-2"
+                      variant="outline"
+                      className="border-[#7b3ff2] text-[#d4c5f9] hover:text-white hover:bg-[#7b3ff2]/20"
                       onClick={() => signOut({ redirectUrl: "/" })}
                       aria-label="Se déconnecter"
                       title="Se déconnecter"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Déconnexion
                     </Button>
-                  <UserButton
-                    afterSignOutUrl="/"
-                    appearance={{
-                      elements: {
-                        avatarBox: "w-9 h-9",
-                      },
-                    }}
-                  />
+                    <UserButton
+                      afterSignOutUrl="/"
+                      appearance={{
+                        elements: {
+                          avatarBox: "w-9 h-9",
+                        },
+                      }}
+                    />
                   </div>
                 </SignedIn>
               </>

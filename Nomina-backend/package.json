@@ -12,6 +12,7 @@
     "migrate:deploy": "prisma migrate deploy",
     "seed": "node -r ts-node/register src/scripts/seed.ts",
     "seed:personnages": "node -r ts-node/register src/scripts/seed-personnages.ts",
+    "seed:creatures": "node -r ts-node/register src/scripts/seed-creatures.ts",
     "backfill:nompersonnage-genre": "node -r ts-node/register src/scripts/backfill-nompersonnage-genre.ts",
     "report:nompersonnage-genre": "node -r ts-node/register src/scripts/report-nompersonnage-genre.ts",
     "normalize:nompersonnage-genre": "node -r ts-node/register src/scripts/normalize-nompersonnage-genre.ts",

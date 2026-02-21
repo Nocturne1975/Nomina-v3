@@ -18,32 +18,32 @@ export function HomePage() {
 			<section className="relative py-16">
 				<div className="container mx-auto px-4">
 					<div className="grid lg:grid-cols-12 gap-10 items-start">
-						<div className="lg:col-span-7">
+						<div className="lg:col-span-7 rounded-2xl border border-[#7b3ff2]/25 bg-[#2d1b4e]/45 p-6 backdrop-blur-sm">
 							<h2 className="text-3xl md:text-4xl text-white" style={{ fontFamily: "Cinzel, serif" }}>
 								Qu’est-ce que Nomina?
 							</h2>
-							<p className="mt-4 text-[#d4c5f9] leading-relaxed">
+							<p className="mt-4 text-[#f3efff] leading-relaxed">
 								Nomina est une plateforme de génération narrative qui aide à créer des éléments cohérents pour des univers de fiction:
 								noms de personnages, concepts, lieux, cultures, titres, fragments d’histoire et univers thématiques. L’objectif est simple:
 								accélérer l’idéation sans perdre le ton, la logique et le style.
 							</p>
-							<p className="mt-4 text-[#c5bfd9] leading-relaxed">
+							<p className="mt-4 text-white leading-relaxed">
 								Que tu écrives un roman, prépares une campagne de jeu de rôle, construises un worldbuilding ou prototypages un projet créatif,
 								Nomina te fournit des propositions variées et “prêtes à utiliser”, tout en gardant une direction artistique forte.
 							</p>
 
 							<div className="mt-8 flex flex-wrap gap-3">
 								<Link
+									to="/docs"
+									className="inline-flex items-center justify-center rounded-xl border border-[#d4c5f9]/70 bg-[#2d1b4e]/60 px-5 py-3 text-[#f3efff] hover:bg-[#2d1b4e]/80 hover:text-white transition-colors"
+								>
+									Lire la documentation
+								</Link>
+								<Link
 									to="/generate"
 									className="inline-flex items-center justify-center rounded-xl bg-[#7b3ff2] px-5 py-3 text-white hover:bg-[#a67be8] transition-colors"
 								>
 									Lancer une génération
-								</Link>
-								<Link
-									to="/docs"
-									className="inline-flex items-center justify-center rounded-xl border border-[#7b3ff2]/50 bg-[#2d1b4e]/40 px-5 py-3 text-[#d4c5f9] hover:bg-[#2d1b4e]/70 hover:text-white transition-colors"
-								>
-									Lire la documentation
 								</Link>
 							</div>
 						</div>
@@ -56,7 +56,7 @@ export function HomePage() {
 									</div>
 									<div>
 										<div className="text-white font-semibold">Nomina, en une phrase</div>
-										<div className="text-sm text-[#d4c5f9]">Créer, nommer et raconter — plus vite, mieux.</div>
+										<div className="text-sm text-white">Créer, nommer et raconter — plus vite, mieux.</div>
 									</div>
 								</div>
 
@@ -101,11 +101,11 @@ export function HomePage() {
 						].map((card) => (
 							<div
 								key={card.title}
-								className="rounded-2xl border border-[#7b3ff2]/20 bg-[#2d1b4e]/25 p-6 backdrop-blur-sm hover:bg-[#2d1b4e]/35 transition-colors"
+								className="rounded-2xl border border-[#7b3ff2]/30 bg-[#2d1b4e]/45 p-6 backdrop-blur-sm hover:bg-[#2d1b4e]/55 transition-colors"
 							>
 								<div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#7b3ff2] to-[#e8b4f0]" />
 								<div className="mt-4 text-white text-lg font-semibold">{card.title}</div>
-								<p className="mt-2 text-sm text-[#d4c5f9] leading-relaxed">{card.desc}</p>
+								<p className="mt-2 text-sm text-[#efe8ff] leading-relaxed">{card.desc}</p>
 							</div>
 						))}
 					</div>
