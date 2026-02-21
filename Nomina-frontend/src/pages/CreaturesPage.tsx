@@ -70,6 +70,13 @@ export function CreaturesPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const selected = useMemo(() => items.find((c) => c.id === selectedId) ?? null, [items, selectedId]);
 
+  const [search, setSearch] = useState("");
+  const [filterCultureId, setFilterCultureId] = useState("");
+  const [filterCategorieId, setFilterCategorieId] = useState("");
+  const [filterPersonnageId, setFilterPersonnageId] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -117,6 +124,35 @@ export function CreaturesPage() {
       cancelled = true;
     };
   }, []);
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter((c) => {
+      if (filterCultureId && String(c.cultureId ?? "") !== filterCultureId) return false;
+      if (filterCategorieId && String(c.categorieId ?? "") !== filterCategorieId) return false;
+      if (filterPersonnageId && String(c.personnageId ?? "") !== filterPersonnageId) return false;
+
+      if (!q) return true;
+      const personnageLabel = formatPersonnageLabel(c.personnage).toLowerCase();
+      const haystack = `${c.valeur ?? ""} ${c.type ?? ""} ${c.description ?? ""} ${personnageLabel}`.toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [items, search, filterCultureId, filterCategorieId, filterPersonnageId]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterCultureId, filterCategorieId, filterPersonnageId, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, page, pageSize]);
 
   function resetToCreate() {
     setMode("create");
@@ -233,6 +269,51 @@ export function CreaturesPage() {
             </Button>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2 mb-3">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher (nom, type, bio, personnage)"
+              className="xl:col-span-2"
+            />
+            <select
+              value={filterCultureId}
+              onChange={(e) => setFilterCultureId(e.target.value)}
+              className="h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+            >
+              <option value="">Toutes cultures</option>
+              {cultures.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterCategorieId}
+              onChange={(e) => setFilterCategorieId(e.target.value)}
+              className="h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+            >
+              <option value="">Toutes catégories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterPersonnageId}
+              onChange={(e) => setFilterPersonnageId(e.target.value)}
+              className="h-9 rounded-md border border-[#d4c5f9] bg-white px-3 text-sm"
+            >
+              <option value="">Tous personnages</option>
+              {personnages.map((p) => (
+                <option key={p.id} value={String(p.id)}>
+                  {formatPersonnageLabel(p)}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <Table>
             <TableHeader>
               <TableRow>
@@ -244,14 +325,14 @@ export function CreaturesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.length === 0 ? (
+              {paginatedItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="opacity-70">
-                    Aucune créature.
+                    Aucune créature pour ces filtres.
                   </TableCell>
                 </TableRow>
               ) : (
-                items.map((c) => (
+                paginatedItems.map((c) => (
                   <TableRow
                     key={c.id}
                     className={selectedId === c.id ? "bg-muted/50" : undefined}
@@ -293,6 +374,35 @@ export function CreaturesPage() {
               )}
             </TableBody>
           </Table>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <div className="opacity-80">
+              {filteredItems.length} résultat(s) • page {page}/{totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="opacity-80">Par page</label>
+              <select
+                value={String(pageSize)}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="h-8 rounded-md border border-[#d4c5f9] bg-white px-2"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+              </select>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+                Précédent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+              >
+                Suivant
+              </Button>
+            </div>
+          </div>
         </Card>
 
         <Card className="p-4 border-[#d4c5f9]">
