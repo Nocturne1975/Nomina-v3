@@ -24,6 +24,7 @@ export function RegisterPage() {
 	const [email, setEmail] = useState("");
 	const [phone, setPhone] = useState("");
 	const [password, setPassword] = useState("");
+	const [passwordConfirm, setPasswordConfirm] = useState("");
 	const [emailCode, setEmailCode] = useState("");
 
 	const canSubmit = useMemo(() => {
@@ -34,9 +35,10 @@ export function RegisterPage() {
 			firstName.trim().length > 0 &&
 			lastName.trim().length > 0 &&
 			email.trim().length > 0 &&
-			password.trim().length >= 8
+			password.trim().length >= 8 &&
+			passwordConfirm.trim().length >= 8
 		);
-	}, [email, emailCode, firstName, isSignedIn, lastName, password, pending, step]);
+	}, [email, emailCode, firstName, isSignedIn, lastName, password, passwordConfirm, pending, step]);
 
 	useEffect(() => {
 		if (!clerkEnabled) return;
@@ -69,6 +71,10 @@ export function RegisterPage() {
 
 		setError(null);
 		setInfo(null);
+		if (step === "form" && password !== passwordConfirm) {
+			setError("Les mots de passe ne correspondent pas.");
+			return;
+		}
 		setPending(true);
 		try {
 			const maybeSubmitAdminRequest = async () => {
@@ -253,6 +259,18 @@ export function RegisterPage() {
 										<label className="text-sm text-[#3b275f]">Mot de passe</label>
 										<Input className="bg-white text-[#2d1b4e] border-[#bfa1ea]" value={password} onChange={(e) => setPassword(e.target.value)} type="password" />
 										<p className="text-xs text-[#5b4a7f] mt-1">Minimum 8 caractères.</p>
+									</div>
+									<div>
+										<label className="text-sm text-[#3b275f]">Confirmation du mot de passe</label>
+										<Input
+											className="bg-white text-[#2d1b4e] border-[#bfa1ea]"
+											value={passwordConfirm}
+											onChange={(e) => setPasswordConfirm(e.target.value)}
+											type="password"
+										/>
+										{passwordConfirm.length > 0 && password !== passwordConfirm ? (
+											<p className="text-xs text-red-600 mt-1">Les mots de passe ne correspondent pas.</p>
+										) : null}
 									</div>
 								</>
 							) : (
