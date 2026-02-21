@@ -1,6 +1,7 @@
 import express from "express";
 import cors, { type CorsOptions } from "cors";
 import dotenv from "dotenv";
+import path from "path";
 
 // Important!! en dev (ts-node): assure que l'augmentation Express (req.auth) est chargée.
 import "./types/expressType";
@@ -25,6 +26,7 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const envCorsOrigins = (process.env.CORS_ORIGINS ?? "")
   .split(",")

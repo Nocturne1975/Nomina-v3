@@ -223,7 +223,9 @@ export async function apiFetch<T>(
     ...(opts.headers ?? {}),
   };
 
-  if (opts.body !== undefined) {
+  const isFormDataBody = typeof FormData !== 'undefined' && opts.body instanceof FormData;
+
+  if (opts.body !== undefined && !isFormDataBody) {
     headers['Content-Type'] = headers['Content-Type'] ?? 'application/json';
   }
 
@@ -241,6 +243,9 @@ export async function apiFetch<T>(
   } else {
     // Pour les mutations: si offline, on met en file d'attente.
     if (isOffline()) {
+      if (isFormDataBody) {
+        throw new ApiError('Hors-ligne: upload de fichier indisponible', 0);
+      }
       enqueueOutbox({
         method,
         path,
@@ -259,7 +264,7 @@ export async function apiFetch<T>(
     res = await fetch(url, {
       method,
       headers,
-      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+      body: opts.body === undefined ? undefined : isFormDataBody ? (opts.body as FormData) : JSON.stringify(opts.body),
     });
   } catch {
     // network error: si GET, fallback cache

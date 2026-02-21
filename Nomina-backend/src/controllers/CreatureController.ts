@@ -129,3 +129,37 @@ export const totalCreatures = async (_req: Request, res: Response) => {
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
+
+export const uploadCreatureImage = async (req: Request, res: Response) => {
+  try {
+    const creatureId = Number(req.params.id);
+    if (!Number.isFinite(creatureId)) {
+      return res.status(400).json({ error: 'Id de créature invalide' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier image reçu' });
+    }
+
+    const imageUrl = `/uploads/creatures/${req.file.filename}`;
+
+    const creature = await prisma.creature.update({
+      where: { id: creatureId },
+      data: { imageUrl },
+      include: {
+        categorie: true,
+        culture: true,
+        personnage: true,
+      },
+    });
+
+    return res.json({
+      message: 'Image téléversée avec succès',
+      imageUrl,
+      creature,
+    });
+  } catch (error) {
+    console.error('Erreur uploadCreatureImage:', error);
+    return res.status(500).json({ error: 'Erreur serveur' });
+  }
+};

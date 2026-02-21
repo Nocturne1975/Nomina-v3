@@ -173,6 +173,7 @@ model Creature {
   valeur      String
   type        String?
   description String?
+  imageUrl    String?
   personnageId Int?
   personnage   Personnage? @relation(fields: [personnageId], references: [id])
   cultureId   Int?

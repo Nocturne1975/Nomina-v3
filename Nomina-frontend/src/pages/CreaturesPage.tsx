@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { apiFetch, ApiError } from "../lib/api";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { apiFetch, ApiError, getApiBaseUrl } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -21,6 +21,7 @@ type Creature = {
   valeur: string;
   type?: string | null;
   description?: string | null;
+  imageUrl?: string | null;
   personnageId?: number | null;
   cultureId?: number | null;
   categorieId?: number | null;
@@ -76,6 +77,9 @@ export function CreaturesPage() {
   const [filterPersonnageId, setFilterPersonnageId] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
+  const [uploadTargetId, setUploadTargetId] = useState<number | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,6 +186,56 @@ export function CreaturesPage() {
     setFormErrors({});
   }
 
+  function toAbsoluteImageUrl(imageUrl?: string | null): string | null {
+    if (!imageUrl) return null;
+    if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) return imageUrl;
+    return `${getApiBaseUrl()}${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
+  }
+
+  function triggerImageUpload(creatureId: number) {
+    setUploadTargetId(creatureId);
+    fileInputRef.current?.click();
+  }
+
+  async function onImageSelected(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+
+    if (!file || !uploadTargetId) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Le fichier doit être une image.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image trop lourde (max 5 Mo).");
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+    setUploadingImage(true);
+
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+
+      await apiFetch<{ message: string; imageUrl: string }>(`/creatures/${uploadTargetId}/image`, {
+        method: "POST",
+        body: fd,
+      });
+
+      setSuccess("Image téléversée avec succès.");
+      await refreshAll();
+    } catch (err) {
+      setError(String((err as any)?.message ?? err));
+    } finally {
+      setUploadingImage(false);
+      setUploadTargetId(null);
+    }
+  }
+
   async function onSubmit() {
     setSuccess(null);
     setError(null);
@@ -261,6 +315,14 @@ export function CreaturesPage() {
       {success ? <p className="text-green-700 mb-4">{success}</p> : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => onImageSelected(e).catch(() => undefined)}
+        />
+
         <Card className="p-4 border-[#d4c5f9] lg:col-span-2">
           <div className="flex items-center justify-between gap-3 mb-3">
             <h2 className="text-lg font-semibold">Liste</h2>
@@ -320,6 +382,7 @@ export function CreaturesPage() {
                 <TableHead>ID</TableHead>
                 <TableHead>Valeur</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Image</TableHead>
                 <TableHead>Personnage lié</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -327,7 +390,7 @@ export function CreaturesPage() {
             <TableBody>
               {paginatedItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="opacity-70">
+                  <TableCell colSpan={6} className="opacity-70">
                     Aucune créature pour ces filtres.
                   </TableCell>
                 </TableRow>
@@ -342,6 +405,17 @@ export function CreaturesPage() {
                     <TableCell>{c.id}</TableCell>
                     <TableCell className="font-medium">{c.valeur}</TableCell>
                     <TableCell>{c.type ?? "—"}</TableCell>
+                    <TableCell>
+                      {c.imageUrl ? (
+                        <img
+                          src={toAbsoluteImageUrl(c.imageUrl) ?? undefined}
+                          alt={`Illustration de ${c.valeur}`}
+                          className="w-12 h-12 rounded-md border border-[#d4c5f9] object-cover"
+                        />
+                      ) : (
+                        <span className="opacity-60">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>{formatPersonnageLabel(c.personnage)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -355,6 +429,17 @@ export function CreaturesPage() {
                           disabled={isSubmitting}
                         >
                           Modifier
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerImageUpload(c.id);
+                          }}
+                          disabled={isSubmitting || uploadingImage}
+                        >
+                          {uploadingImage && uploadTargetId === c.id ? "Upload…" : "Image"}
                         </Button>
                         <Button
                           size="sm"
