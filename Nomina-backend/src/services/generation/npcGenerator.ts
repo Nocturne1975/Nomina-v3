@@ -102,7 +102,7 @@ async function buildContext(options: GenerateNpcOptions) {
     occupation: occupation?.name ?? null,
     organization: organization?.name ?? null,
     event: event?.title ?? null,
-    fragmentInspiration: sampleFragments.map((f) => f.texte).filter(Boolean),
+    fragmentInspiration: sampleFragments.map((f: { texte: string }) => f.texte).filter(Boolean),
   };
 }
 
@@ -132,12 +132,12 @@ function buildUserPrompt(options: GenerateNpcOptions, context: Awaited<ReturnTyp
 
   const keywordsInstruction = options.keywords
     ? `\nIMPORTANT — instruction sur les mots-clés "${options.keywords}" :
-Si ces mots-clés désignent un personnage précis (un nom propre, un surnom, une description directe comme "${options.keywords}"), alors LE PREMIER personnage généré DOIT ÊTRE ce personnage exact — pas un personnage qui le mentionne, le cherche ou le connaît. Le prénom/nom de ce premier personnage doit correspondre ou s'inspirer directement du nom donné. Les personnages suivants peuvent être liés à lui (alliés, ennemis, témoins) si pertinent, mais le premier doit l'incarner directement.
-Si les mots-clés décrivent plutôt un thème ou une ambiance générale (ex: "forêt sombre", "trahison"), alors ignore cette règle et génère des personnages inspirés de ce thème.\n`
+Si ces mots-clés désignent un personnage précis (un nom propre, un surnom, une description directe comme "${options.keywords}"), alors TOUS les ${count} personnages générés doivent être des VARIATIONS de ce même personnage — autant d'interprétations différentes possibles de qui il/elle pourrait être (rôle différent, traits différents, histoire différente), mais en gardant le même nom ou une variante très proche du nom donné. L'utilisateur veut explorer plusieurs versions du même personnage pour choisir celle qui lui convient, pas une galerie de personnages secondaires qui parlent de lui.
+Si les mots-clés décrivent plutôt un thème ou une ambiance générale (ex: "forêt sombre", "trahison"), alors ignore cette règle et génère des personnages variés inspirés de ce thème.\n`
     : "";
 
   const inspirationBlock = context.fragmentInspiration.length > 0
-    ? `\nInspiration narrative existante dans cet univers (à t'en inspirer pour le ton, pas à recopier) :\n${context.fragmentInspiration.map(t => `  - ${t}`).join("\n")}\n`
+    ? `\nInspiration narrative existante dans cet univers (à t'en inspirer pour le ton, pas à recopier) :\n${context.fragmentInspiration.map((t: string) => `  - ${t}`).join("\n")}\n`
     : "";
 
   return `Génère ${count} personnages fictifs complets.

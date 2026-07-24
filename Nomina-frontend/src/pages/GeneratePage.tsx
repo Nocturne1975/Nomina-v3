@@ -370,7 +370,7 @@ export function GeneratePage() {
                             <span className="text-rule-2 ml-2">⌄</span>
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[340px] p-0 bg-ink border border-rule-2 shadow-lg z-50" align="start">
+                        <PopoverContent className="w-[340px] p-0 bg-white border border-rule shadow-lg z-50" align="start">
                           <Command className="bg-ink">
                             <CommandInput placeholder="Rechercher…" className="bg-ink text-velin border-b border-rule-2" />
                             <CommandList>

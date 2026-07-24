@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import { apiFetch } from "../lib/api";
 
@@ -55,19 +55,32 @@ const plans = [
 
 export function Pricing() {
   const { isSignedIn } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleCheckout(planId: string) {
-    if (!isSignedIn) return;
+    setError(null);
+
+    if (!isSignedIn) {
+      navigate(`/login?redirect=/pricing&plan=${planId}`);
+      return;
+    }
+
     setLoading(planId);
     try {
       const { url } = await apiFetch<{ url: string }>("/billing/checkout", {
         method: "POST",
-        body: JSON.stringify({ plan: planId }),
+        body: { plan: planId },
       });
-      if (url) window.location.href = url;
+      if (url) {
+        window.location.href = url;
+      } else {
+        setError("Impossible de démarrer le paiement. Réessayez plus tard.");
+      }
     } catch (err) {
       console.error("Erreur checkout:", err);
+      setError("Impossible de joindre le service de paiement. Réessayez plus tard.");
     } finally {
       setLoading(null);
     }
@@ -85,6 +98,13 @@ export function Pricing() {
             Commence gratuitement. Change de plan quand ton monde grandit.
           </p>
         </div>
+
+        {/* ── Erreur ── */}
+        {error && (
+          <div className="max-w-md mx-auto mb-6 bg-crit-bg border border-crit/25 text-crit text-sm rounded-lg px-4 py-3 text-center">
+            {error}
+          </div>
+        )}
 
         {/* ── Cartes ── */}
         <div className="grid md:grid-cols-3 gap-4 items-stretch">
@@ -158,11 +178,7 @@ export function Pricing() {
                   <button
                     onClick={() => handleCheckout(plan.id)}
                     disabled={loading === plan.id}
-                    className={`text-center rounded-lg py-3 text-[13.5px] font-semibold transition-colors ${
-                      isDark
-                        ? "bg-wax hover:bg-wax-hover text-velin"
-                        : "bg-wax hover:bg-wax-hover text-velin"
-                    } disabled:opacity-60`}
+                    className="text-center rounded-lg py-3 text-[13.5px] font-semibold transition-colors bg-wax hover:bg-wax-hover text-velin disabled:opacity-60"
                   >
                     {loading === plan.id ? "Redirection…" : plan.cta}
                   </button>
